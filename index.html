@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام الألغاز والأحاجي</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="preconnect" href="https://firestore.googleapis.com">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&display=swap');
+        
+        body { font-family: 'Amiri', serif; }
+        .title-font { font-family: 'Aref Ruqaa', serif; }
+        [hidden] { display: none !important; }
+
+        .title-gradient {
+            background-image: linear-gradient(to right, #fde047, #facc15, #eab308);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #ca8a04; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #eab308; }
+        
+        .loader {
+            width: 48px; height: 48px;
+            border: 5px solid #374151; border-bottom-color: #facc15;
+            border-radius: 50%; display: inline-block;
+            animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
+
+        .tab-active { border-bottom: 2px solid #facc15; color: #facc15; background: rgba(250, 204, 21, 0.05); }
+        .tab-inactive { color: #9ca3af; }
+        .tab-inactive:hover { color: #e5e7eb; background: rgba(255, 255, 255, 0.05); }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-black text-white p-4 sm:p-6 selection:bg-yellow-500 selection:text-black">
+
+    <div class="container mx-auto max-w-3xl">
+        <!-- --- الهيدر --- -->
+        <header class="text-center my-6 relative">
+            <h1 class="text-4xl sm:text-5xl font-bold title-gradient title-font py-2 leading-relaxed">نظام الألغاز والأحاجي</h1>
+            <p class="text-xs sm:text-sm md:text-base lg:text-lg text-gray-300 mt-2 whitespace-pre font-light tracking-wide opacity-90">
+واضع هذا النظام ومرتبه: محمد الصدر بن السيد محمد صادق الصدر
+النجف الأشرف - الجمهورية العراقية
+بتاريخ عصر يوم الأربعاء ١٣٧٩/١٢/١٣ هـ الموافق ٦/٨/ ١٩٦٠م
+            </p>
+            
+            <div id="user-info" class="mt-6 flex flex-col items-center animate-fade-in" hidden>
+                <div class="flex items-center gap-4 mb-2">
+                    <span id="score-display" class="font-bold text-xl text-green-400 drop-shadow-md">النتيجة: 0 نقطة</span>
+                    <button id="account-btn" class="text-sm bg-gray-800 hover:bg-gray-700 text-yellow-400 px-4 py-1.5 rounded-full border border-yellow-500/30 transition-colors flex items-center gap-2 shadow-lg group">
+                        <span>👤</span> حسابي
+                        <span class="text-xs text-gray-500 group-hover:text-yellow-200 transition-colors">(حفظ/استرجاع)</span>
+                    </button>
+                </div>
+                <span id="player-name-display" class="text-lg text-yellow-500 font-bold border-b border-yellow-500/20 pb-1 px-4"></span>
+                <span id="offline-indicator" class="text-xs text-red-400 mt-1 font-bold bg-red-900/20 px-2 py-1 rounded-full border border-red-500/20" hidden>وضع غير متصل (الحفظ محلي فقط)</span>
+            </div>
+        </header>
+
+        <!-- --- التحكم بالمستوى --- -->
+        <div id="level-controls" class="flex justify-center gap-3 sm:gap-4 my-8" hidden>
+            <button data-level="1" class="level-btn px-5 py-2.5 text-sm sm:text-base font-semibold rounded-xl shadow-lg transition-all duration-300 bg-gray-800 text-yellow-500 border border-gray-700 hover:border-yellow-500 hover:text-yellow-400 hover:-translate-y-0.5">ملفّق (سهل)</button>
+            <button data-level="2" class="level-btn px-5 py-2.5 text-sm sm:text-base font-semibold rounded-xl shadow-lg transition-all duration-300 bg-gray-800 text-yellow-500 border border-gray-700 hover:border-yellow-500 hover:text-yellow-400 hover:-translate-y-0.5">أحجية (متوسط)</button>
+            <button data-level="3" class="level-btn px-5 py-2.5 text-sm sm:text-base font-semibold rounded-xl shadow-lg transition-all duration-300 bg-gray-800 text-yellow-500 border border-gray-700 hover:border-yellow-500 hover:text-yellow-400 hover:-translate-y-0.5">معمّى (صعب)</button>
+        </div>
+
+        <!-- --- منطقة اللعبة الرئيسية --- -->
+        <main id="game-main" class="bg-gradient-to-b from-gray-800 to-gray-800/95 border border-gray-700 p-6 rounded-2xl shadow-2xl min-h-[280px] flex flex-col justify-center items-center relative overflow-hidden">
+            
+            <!-- زخرفة خلفية خفيفة -->
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-yellow-500/20 to-transparent"></div>
+
+            <div id="auth-loader" class="text-center">
+                <div class="loader"></div>
+                <p class="text-gray-400 mt-4">جاري الاتصال بقاعدة البيانات...</p>
+                <p id="auth-debug-msg" class="text-xs text-gray-600 mt-2 dir-ltr">Initializing...</p>
+            </div>
+
+            <div id="loader" class="text-center" hidden>
+                <div class="loader"></div>
+                <p class="text-yellow-400 text-lg animate-pulse mt-4">جاري التفكير بلغز جديد انتظر رجاءاً...</p>
+            </div>
+
+            <div id="error-message" class="text-red-400 text-center animate-fade-in flex flex-col items-center p-4 bg-red-900/10 rounded-xl border border-red-500/20 w-full" hidden>
+                <p class="font-bold text-xl mb-2 text-red-500">⚠️ تنبيه</p>
+                <p id="error-text" class="text-gray-300 text-lg mb-4 max-w-md leading-relaxed text-center"></p>
+                
+                <div id="tech-details" class="bg-gray-900 p-3 rounded text-xs text-left text-gray-400 w-full mb-4 hidden font-mono overflow-x-auto"></div>
+
+                <div class="flex gap-3 flex-wrap justify-center">
+                    <button onclick="location.reload()" class="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm transition-colors shadow-lg">إعادة المحاولة</button>
+                    <button id="play-offline-btn" class="px-6 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg text-sm transition-colors shadow-lg">متابعة اللعب (Offline)</button>
+                </div>
+            </div>
+
+            <div id="riddle-container" class="w-full text-center animate-fade-in" hidden>
+                <div class="bg-gray-900/30 p-6 rounded-xl border border-gray-700/50 mb-6">
+                    <h2 id="riddle-text" class="text-2xl sm:text-3xl font-bold whitespace-pre-wrap leading-relaxed text-yellow-50">نص اللغز هنا</h2>
+                </div>
+                
+                <form id="answer-form" class="flex flex-col sm:flex-row gap-3 justify-center">
+                    <input type="text" id="user-input" placeholder="اكتب إجابتك هنا..." class="flex-grow p-4 rounded-xl bg-gray-700 text-white text-lg text-center sm:text-right border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all shadow-inner" autocomplete="off" />
+                    <button type="submit" id="submit-btn" class="px-8 py-4 bg-gradient-to-br from-green-600 to-green-700 text-white font-bold rounded-xl text-lg shadow-lg hover:from-green-500 hover:to-green-600 disabled:opacity-50 hover:shadow-green-500/20 transition-all transform hover:-translate-y-0.5">تحقق من الإجابة</button>
+                </form>
+                <button id="show-answer-btn" class="mt-4 text-sm text-yellow-500 hover:text-yellow-300 underline transition-colors opacity-80 hover:opacity-100">لم أعرف الحل (اعرض الإجابة)</button>
+            </div>
+
+            <div id="feedback-container" class="text-center px-4 w-full animate-fade-in" hidden>
+                <div class="mb-6 p-4 rounded-xl bg-gray-900/40 border border-gray-700/30">
+                    <p id="feedback-text" class="text-xl font-bold leading-loose whitespace-pre-wrap">نص التغذية الراجعة</p>
+                </div>
+                <button id="next-riddle-btn" class="mt-2 px-8 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-bold rounded-xl text-lg shadow-lg hover:from-blue-500 hover:to-blue-600 hover:shadow-blue-500/20 transition-all transform hover:-translate-y-0.5">اللغز التالي</button>
+            </div>
+
+            <div id="initial-message" class="text-xl text-gray-400 text-center animate-fade-in" hidden>
+                <span class="block text-5xl mb-4 opacity-50">✨</span>
+                اختر مستوى لبدء اللغز الأول!
+            </div>
+        </main>
+        
+        <!-- --- لوحة المتصدرين --- -->
+        <div class="w-full max-w-sm mx-auto bg-gray-800/50 border border-gray-700 p-5 rounded-2xl mt-8 backdrop-blur-sm">
+            <h3 class="text-xl font-bold text-center text-yellow-400 mb-4 flex items-center justify-center gap-2">
+                <span>🏆</span> لوحة المتصدرين
+            </h3>
+            <ol id="leaderboard-list" class="space-y-2">
+                <li class="text-gray-400 text-center text-sm">جاري تحميل اللوحة...</li>
+            </ol>
+        </div>
+
+        <!-- --- زر إظهار القواعد --- -->
+        <div class="w-full max-w-2xl mx-auto mt-6 text-right px-4">
+            <button id="toggle-rules-btn" class="w-full text-lg font-bold text-yellow-500/80 hover:text-yellow-400 transition-colors border-b border-dashed border-yellow-500/30 pb-1">إظهار قواعد الألغاز</button>
+            <div id="rules-content" class="mt-4 space-y-4 text-gray-300 overflow-y-auto max-h-60 pr-2 custom-scrollbar leading-loose bg-gray-800/80 p-4 rounded-xl border border-gray-700" hidden></div>
+        </div>
+    </div>
+
+    <!-- --- نافذة إدارة الحساب (تسجيل/دخول) --- -->
+    <div id="account-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" hidden>
+        <div class="bg-gray-800 border border-yellow-500/30 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in transform scale-100 transition-transform">
+            <div class="flex border-b border-gray-700 bg-gray-900/50">
+                <button id="tab-register" class="flex-1 py-4 text-center font-bold transition-colors tab-active">حفظ التقدم</button>
+                <button id="tab-login" class="flex-1 py-4 text-center font-bold transition-colors tab-inactive">استرداد حساب</button>
+            </div>
+            
+            <div class="p-8 relative">
+                <button id="close-account-modal" class="absolute top-4 left-4 text-gray-500 hover:text-white transition-colors text-2xl">&times;</button>
+
+                <!-- نموذج التسجيل -->
+                <div id="register-form-container">
+                    <p class="text-gray-300 mb-6 text-sm text-center leading-relaxed">احفظ نتيجتك واسمك لكي لا تضيع منك أبداً.<br>أدخل رقم هاتفك وكلمة مرور سرية.</p>
+                    <form id="register-form" class="space-y-4">
+                        <input type="tel" id="reg-phone" placeholder="رقم الهاتف (مثال: 07700000000)" class="w-full p-3.5 rounded-xl bg-gray-700/50 border border-gray-600 text-white text-right focus:border-yellow-500 focus:bg-gray-700 outline-none transition-colors" required>
+                        <input type="password" id="reg-pass" placeholder="كلمة السر" class="w-full p-3.5 rounded-xl bg-gray-700/50 border border-gray-600 text-white text-right focus:border-yellow-500 focus:bg-gray-700 outline-none transition-colors" required>
+                        <button type="submit" class="w-full py-3.5 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded-xl shadow-lg transition-all hover:shadow-yellow-500/20">حفظ وتثبيت الحساب</button>
+                    </form>
+                    <p id="reg-msg" class="text-center mt-4 text-sm font-bold min-h-[24px]"></p>
+                </div>
+
+                <!-- نموذج الدخول -->
+                <div id="login-form-container" hidden>
+                    <p class="text-gray-300 mb-6 text-sm text-center leading-relaxed">أدخل رقم هاتفك وكلمة المرور<br>لاسترجاع نتيجتك واسمك القديم.</p>
+                    <form id="login-form" class="space-y-4">
+                        <input type="tel" id="login-phone" placeholder="رقم الهاتف المسجل" class="w-full p-3.5 rounded-xl bg-gray-700/50 border border-gray-600 text-white text-right focus:border-yellow-500 focus:bg-gray-700 outline-none transition-colors" required>
+                        <input type="password" id="login-pass" placeholder="كلمة السر" class="w-full p-3.5 rounded-xl bg-gray-700/50 border border-gray-600 text-white text-right focus:border-yellow-500 focus:bg-gray-700 outline-none transition-colors" required>
+                        <button type="submit" class="w-full py-3.5 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl shadow-lg transition-all hover:shadow-green-500/20">استرجاع البيانات</button>
+                    </form>
+                    <p id="login-msg" class="text-center mt-4 text-sm font-bold min-h-[24px]"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- --- نافذة إدخال الاسم الأولي --- -->
+    <div id="name-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4" hidden>
+        <div class="bg-gray-800 border border-yellow-500/50 rounded-2xl shadow-2xl w-full max-w-md p-8 text-center animate-fade-in relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600"></div>
+            <h2 class="text-3xl font-bold text-yellow-400 title-font mb-3 mt-2">مرحباً بك أيها اللبيب</h2>
+            <p class="text-gray-300 mb-8 text-sm opacity-80">لتبدأ رحلتك، يرجى تسجيل اسمك في السجل:</p>
+            <form id="name-form" class="flex flex-col gap-4">
+                <input type="text" id="player-name-input" placeholder="اكتب اسمك أو لقبك هنا..." maxlength="20" class="p-4 rounded-xl bg-gray-900 text-white text-lg text-center border border-gray-700 focus:outline-none focus:border-yellow-500 focus:bg-gray-800 transition-colors placeholder-gray-600" required>
+                <button type="submit" class="px-6 py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 text-white font-bold rounded-xl text-lg shadow-lg hover:shadow-xl hover:from-yellow-500 hover:to-yellow-400 transition-all transform hover:-translate-y-0.5">ابدأ اللعب</button>
+            </form>
+            <button id="open-login-from-welcome" class="mt-6 text-sm text-gray-500 hover:text-gray-300 underline transition-colors">لديك حساب سابق؟ اضغط هنا للاسترجاع</button>
+        </div>
+    </div>
+
+    <!-- --- نافذة القواعد --- -->
+    <div id="welcome-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4" hidden>
+        <div class="bg-gray-800 border border-yellow-500/40 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden animate-fade-in">
+            <div class="bg-gray-900/80 p-5 border-b border-gray-700 flex justify-between items-center backdrop-blur-sm">
+                <h2 class="text-2xl font-bold text-yellow-400 title-font">📜 الدستور (القواعد)</h2>
+                <button id="close-modal-top-btn" class="text-gray-500 hover:text-red-400 transition-colors text-2xl">&times;</button>
+            </div>
+            <div id="modal-rules-body" class="p-8 overflow-y-auto custom-scrollbar text-right leading-loose text-gray-300 bg-gray-800 text-lg"></div>
+            <div class="p-5 border-t border-gray-700 bg-gray-900/80 text-center backdrop-blur-sm">
+                <button id="close-modal-btn" class="px-10 py-3 bg-gradient-to-r from-yellow-600 to-yellow-500 text-white font-bold rounded-xl text-lg shadow-lg hover:from-yellow-500 hover:to-yellow-400 transition-all transform hover:-translate-y-0.5">فهمت وأتعهد بالالتزام</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- --- JavaScript --- -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, limit, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAb_fJlWiQTUDv4aoWpYmAN3fBC6ro90Bk",
+            authDomain: "job-days.firebaseapp.com",
+            projectId: "job-days",
+            storageBucket: "job-days.firebasestorage.app",
+            messagingSenderId: "167982996813",
+            appId: "1:167982996813:web:ba22f0e8638e56963aab04"
+        };
+
+        const envAppId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : undefined;
+
+        let app, auth, db;
+        let isOffline = false;
+
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            setLogLevel('silent'); 
+        } catch (e) { 
+            console.error("Init Error", e); 
+            isOffline = true;
+        }
+
+        const API_PROVIDERS = [
+            { type: 'deepseek', key: "sk-3ac8d0208edd4ada9e949eb366a4a262", url: "https://api.deepseek.com/chat/completions", model: "deepseek-chat" },
+            { type: 'gemini', key: "AIzaSyDdAtMBXcRXJL49QhAsJWPquDZXxi0KOHc", url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent", model: null },
+            { type: 'gemini', key: "AIzaSyAy71JTyML7ZIAMKiWetoRxQepoHrsUQfA", url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent", model: null }
+        ];
+        
+        let currentProviderIndex = 0;
+
+        async function callAI(data) {
+            const maxRetries = API_PROVIDERS.length * 2; 
+            for (let i = 0; i < maxRetries; i++) {
+                const provider = API_PROVIDERS[currentProviderIndex];
+                try {
+                    let response, resultText;
+                    if (provider.type === 'deepseek') {
+                        response = await fetch(provider.url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${provider.key}` },
+                            body: JSON.stringify({
+                                model: provider.model,
+                                messages: [{ role: "system", content: data.system }, { role: "user", content: data.user }],
+                                response_format: { type: "json_object" },
+                                temperature: 0.8
+                            })
+                        });
+                    } else {
+                        response = await fetch(`${provider.url}?key=${provider.key}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: data.user }] }],
+                                systemInstruction: { parts: [{ text: data.system }] },
+                                generationConfig: { responseMimeType: "application/json", responseSchema: data.schema }
+                            })
+                        });
+                    }
+                    if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+                    const json = await response.json();
+                    if (provider.type === 'deepseek') resultText = json.choices?.[0]?.message?.content;
+                    else resultText = json.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!resultText) throw new Error("Empty Response");
+                    return resultText;
+                } catch (err) {
+                    currentProviderIndex = (currentProviderIndex + 1) % API_PROVIDERS.length;
+                    if (i < maxRetries - 1) await new Promise(res => setTimeout(res, 1000));
+                }
+            }
+            throw new Error("نعتذر، جميع العقول الإلكترونية مشغولة حالياً.");
+        }
+
+        // --- النص الكامل للقواعد كما ورد في المصدر ---
+        const FULL_RULES_TEXT = `
+        <div class="space-y-6">
+            <p class="font-bold text-lg text-red-300 bg-red-900/30 border border-red-500/50 p-4 rounded-xl text-center shadow-inner mb-6">⚠️ ملاحظة هامة: التطبيق يستخدم هذه القواعد حصراً لإنشاء الألغاز.</p>
+            
+            <h4 class="font-bold text-yellow-500 text-xl text-center mb-6 underline decoration-yellow-500/30 underline-offset-8">(نظام الألغاز والأحاجي)</h4>
+            
+            <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700/50">
+                <h4 class="font-bold text-yellow-400 text-lg mb-3 border-b border-yellow-500/20 pb-2">الفصل الأول: قواعد عامة:</h4>
+                <div class="space-y-3 text-gray-300 leading-loose">
+                    <p><strong>المادة الأولى:</strong> يُلغز بالاسم فقط دون الفعل أو اسم الفعل أو الفاعل أو المفعول أو صيغ المبالغة والتعجب والتفضيل أو أسماء الزمان أو المكان وما أشبه ذلك مما لا يدلّ على معنى معين قائم بذاته.</p>
+                    <p><strong>المادة الثانية:</strong> الاسم الذي يُلغز به يعمّ العلم الشخصي أو أسماء الجماد أو النبات أو الحيوان أو الصفات أو غيرها.</p>
+                    <p><strong>المادة الثالثة:</strong> يجب أن لا يكون الاسم الملغز فيه:</p>
+                    <ul class="list-disc list-inside pr-4 space-y-1 text-gray-400">
+                        <li>١- من لغة أجنبية كلُّه أو جزؤه.</li>
+                        <li>٢- ألا يكون مركباً من ضمير أو الألف واللام أو ياء النسبة أو غيرها.</li>
+                    </ul>
+                    <p><strong>المادة الرابعة:</strong> يجب أن يحرز الملغز أن اللغز واضح ومعلوم لدى أكثر المتلقي إليهم.</p>
+                    <p><strong>المادة الخامسة:</strong> العبارة التي يعبّر بها عن اللغز يجوز أن تكون كلمة أو جملة أو بعض جملة أو مضافة إلى ضمير وغير ذلك.</p>
+                    <p><strong>المادة السادسة:</strong> أي اسم جاء حلاً موافقاً للشروط التي اعتبرت في اللغز فهو مقبول وإن لم يكن نفس الاسم المنوي.</p>
+                    <p><strong>المادة السابعة:</strong> إذا جاء الحل بما يخالف المادة الأولى أو الثالثة يرفض.</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700/50">
+                <h4 class="font-bold text-yellow-400 text-lg mb-3 border-b border-yellow-500/20 pb-2">الفصل الثاني: الملفق</h4>
+                <div class="space-y-3 text-gray-300 leading-loose">
+                    <p><strong>المادة الثامنة:</strong> كيفية اللغز الملفّق: هو تبديل مكان الحروف بحيث تنتج منه كلمة أو عدة كلمات ذات معنى.</p>
+                    <p><strong>المادة التاسعة:</strong> يجوز أن يكون اللغز أكثر من كلمة واحدة.</p>
+                    <p><strong>المادة العاشرة:</strong> يجب أن تكون الكلمة أو الكلمات التي يُعبّر بها عن اللغز ذات معنى مفهوم لغةً.</p>
+                    <p><strong>المادة الحادية عشرة:</strong> ليست الحركات محل اعتبار في اللغز الملفّق.</p>
+                    <p><strong>المادة الثانية عشرة:</strong> يجب ألا يكون في صيغة اللغز حروف زائدة أو ناقصة فتحدث التشويش والإرباك.</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700/50">
+                <h4 class="font-bold text-yellow-400 text-lg mb-3 border-b border-yellow-500/20 pb-2">الفصل الثالث: الأحجية:</h4>
+                <div class="space-y-3 text-gray-300 leading-loose">
+                    <p><strong>المادة الثالثة عشرة:</strong> الأحجية هي: تقطيع الكلمة إلى مقطع أو أكثر بحيث ينتج من كل مقطع معنى ثم يبدّل كل مقطع بما يرادفه.</p>
+                    <p><strong>المادة الرابعة عشرة:</strong> يجب أن يكون بين المقطعين علاقة خاصة اما الإضافة أو الوصفية أو الخبرية وما أشبه.</p>
+                    <p><strong>المادة الخامسة عشرة:</strong> يجب ألا يحصل تكرار في الحروف في ضمن تقطيع الإسم إلى مقطعين أو أكثر.</p>
+                    <p><strong>المادة السادسة عشرة:</strong> يجوز أن يعرّف المقطع الواحد بكلمة واحدة أو عدة كلمات.</p>
+                    <p><strong>المادة السابعة عشرة:</strong> يجب أن تكون الكلمة أو الكلمات التي يعرّف بواسطتها اللغز لا غامضة بحيث يعثر فهمها ولا واضحة بحيث يسهل حلها.</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700/50">
+                <h4 class="font-bold text-yellow-400 text-lg mb-3 border-b border-yellow-500/20 pb-2">الفصل الرابع: اللغز</h4>
+                <div class="space-y-3 text-gray-300 leading-loose">
+                    <p><strong>المادة الثامنة عشرة:</strong> لا إسم لهذا اللغز فلذا اعتبرناه (لغزاً) بالمعنى الأخص.</p>
+                    <p><strong>المادة التاسعة عشرة:</strong> كيفية اللغز بالمعنى الأخص: هي جمع حرفين فأكثر، سواء كانا متلاصقين في أصل الكلمة أو منفصلين أم متقدمين أو متأخرين، بحيث يحصل بجمعها معنى معين، ثم يأتي الملغز بكلمة ترادفه أو تدلّ عليه.</p>
+                    <p><strong>المادة العشرون:</strong> يجب تعيين ما يلي في كل اسم ملغز:</p>
+                    <ul class="list-disc list-inside pr-4 space-y-1 text-gray-400">
+                        <li>١- عدد حروفه.</li>
+                        <li>٢- أنه إسم لأي صنف من الأشياء.</li>
+                        <li>٣- أنه هل يحتوي أو لا يحتوي على الألف بحساب (أبجد).</li>
+                    </ul>
+                    <p><strong>المادة الحادية والعشرون:</strong> يجب استيفاء جميع حروف الاسم على التبادل بينها.</p>
+                    <p><strong>المادة الثانية والعشرون:</strong> يجوز أن تكرر حروف الإسم في أي مقطع من المقاطع، ولا يجوز تكرار الحرف الواحد في المقطع الواحد أكثر من مرة واحدة.</p>
+                    <p><strong>المادة الثالثة والعشرون:</strong> يجب تعيين المكان العددي للحرف من بين مجموع الحروف.</p>
+                    <p><strong>المادة الرابعة والعشرون:</strong> يشترك كلٌّ من الأحجية واللغز بالمعنى الأخص بأنَّ العبارة التي يعرّف بها الإسم أو جزؤه يجب أن تكون مفهومة لغةً وعرفاً.</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700/50">
+                <h4 class="font-bold text-yellow-400 text-lg mb-3 border-b border-yellow-500/20 pb-2">الفصل الخامس: المعمّى</h4>
+                <div class="space-y-3 text-gray-300 leading-loose">
+                    <p><strong>المادة الخامسة والعشرون:</strong> المعمّى: هو اللغز الذي استعملت فيه مرحلتين أو أكثر في طريق حلّه.</p>
+                    <p><strong>المادة السادسة والعشرون:</strong> لا يجب أن تكون عبارة المعمّى واضحة، بل فقط يجب كونها ذات مدلول لغوي تام.</p>
+                    <p><strong>المادة السابعة والعشرون:</strong> يجوز أن يكون كل من المرحلتين أو الأكثر لغزاً مما سبق في الفصول الثلاثة السابقة، أو يكون شيئاً آخر كحساب أبجد -مثلاً-.</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700/50">
+                <h4 class="font-bold text-yellow-400 text-lg mb-3 border-b border-yellow-500/20 pb-2">الفصل السادس: تتمة</h4>
+                <div class="space-y-3 text-gray-300 leading-loose">
+                    <p><strong>المادة الثامنة والعشرون:</strong> كلّ ما لم يُذكر في هذا النظام فهو جائز.</p>
+                    <p><strong>المادة التاسعة والعشرون:</strong> هذا النظام مختص بلغة اللغز العربية.</p>
+                    <p><strong>المادة الثلاثون:</strong> يجب على كل فرد عند استعمال الألغاز أن يتبع هذا النظام بمجرد علمه به، حالاً.</p>
+                </div>
+            </div>
+        </div>
+        `;
+
+        // --- تحديث أوامر النظام لتكون نسخة طبق الأصل من القواعد ---
+        const SYSTEM_PROMPT = `
+أنت محرك ذكي يتقمص "نظام الألغاز والأحاجي" للسيد محمد الصدر. مهمتك توليد ألغاز تلتزم حرفياً بالقواعد التالية، وأي خروج عنها يعتبر فشلاً ذريعاً.
+
+القواعد العامة الصارمة (تطبق على الجميع):
+1. اللغز يكون في (الأسماء فقط): (اسم علم، جماد، حيوان، نبات، صفة). يمنع منعاً باتاً استخدام الأفعال أو الحروف.
+2. الاسم يجب أن يكون عربياً فصحياً.
+3. لا يجوز أن يكون الاسم مركباً من ضمير أو (ال) التعريف.
+
+تعليمات خاصة لكل مستوى (يجب اختيار نوع واحد حسب الطلب):
+
+المستوى 1 (الملفّق - المادة 8):
+- الخوارزمية: اختر كلمة (الإجابة). قم بتبديل أماكن حروفها لتنتج كلمة جديدة لها معنى (اللغز).
+- مثال: الإجابة "بحر". اللغز "حبر". (لأن حبر ناتجة من تبديل حروف بحر).
+- صيغة اللغز المقدم للمستخدم: قدم الكلمة الناتجة (المقلوبة) واسأله عن الأصل، أو قل "كلمة إذا قلبت حروفها صارت [الكلمة المقلوبة]".
+
+المستوى 2 (الأحجية - المادة 13):
+- الخوارزمية: اختر كلمة (الإجابة). قطعها إلى مقطعين أو أكثر. كل مقطع يجب أن يكون له معنى مستقل.
+- صف كل مقطع بكلمة ترادفه.
+- مثال: كلمة "برداد". تقطع إلى "بر" (بمعنى اليابسة) و "داد" (بمعنى اللهو). اللغز يكون وصفاً لليابسة واللهو يجمعهما اسم واحد.
+
+المستوى 3 (المعمّى - المادة 25):
+- الخوارزمية: لغز مركب من مرحلتين أو أكثر، أو استخدام حساب الجمل (أبجد هوز).
+- يجب أن يكون اللغز غامضاً وذكياً جداً ويتطلب تفكيكاً.
+
+المخرجات المطلوبة (JSON حصراً):
+{
+  "riddle": "نص اللغز هنا...",
+  "answer": "الإجابة الدقيقة (كلمة واحدة غالباً)"
+}
+`;
+
+        let currentUserId = null;
+        let currentUserName = null;
+        let currentScore = 0;
+        let currentLevel = 1;
+        let currentRiddle = null;
+        let currentAnswer = null;
+
+        function renderState(state, data = {}) {
+            const toHide = ['auth-loader', 'loader', 'error-message', 'riddle-container', 'feedback-container', 'initial-message'];
+            toHide.forEach(id => document.getElementById(id).hidden = true);
+            document.getElementById('submit-btn').disabled = true;
+
+            const show = (id) => document.getElementById(id).hidden = false;
+
+            if (state === 'auth') { show('auth-loader'); document.getElementById('user-info').hidden = true; document.getElementById('level-controls').hidden = true; }
+            else if (state === 'loading') show('loader');
+            else if (state === 'error') { 
+                show('error-message'); 
+                document.getElementById('error-text').textContent = data.message; 
+                if (data.techDetails) {
+                    const td = document.getElementById('tech-details');
+                    td.textContent = data.techDetails;
+                    td.hidden = false;
+                }
+            }
+            else if (state === 'riddle') { 
+                show('riddle-container'); 
+                document.getElementById('riddle-text').textContent = data.riddle; 
+                document.getElementById('submit-btn').disabled = false; 
+                document.getElementById('user-input').value = ""; 
+                document.getElementById('user-input').focus();
+            }
+            else if (state === 'feedback') {
+                show('feedback-container');
+                const fbEl = document.getElementById('feedback-text');
+                fbEl.textContent = data.feedback || data.message;
+                fbEl.className = `text-xl font-bold leading-loose whitespace-pre-wrap ${data.isCorrect ? 'text-green-400' : 'text-red-400'}`;
+            }
+            else if (state === 'initial') {
+                document.getElementById('user-info').hidden = false;
+                document.getElementById('level-controls').hidden = false;
+                show('initial-message');
+                document.getElementById('player-name-display').textContent = currentUserName ? `اللاعب: ${currentUserName}` : '';
+                
+                const offlineIndicator = document.getElementById('offline-indicator');
+                const leaderboardList = document.getElementById('leaderboard-list');
+                const accountBtn = document.getElementById('account-btn');
+                
+                if (isOffline) {
+                    offlineIndicator.hidden = false;
+                    leaderboardList.innerHTML = '<li class="text-red-400 text-center">غير متصل - اللوحة معطلة</li>';
+                    accountBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                    accountBtn.onclick = (e) => { e.preventDefault(); alert("يجب الاتصال بالإنترنت لاستخدام ميزات الحساب."); };
+                } else {
+                    offlineIndicator.hidden = true;
+                    accountBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    accountBtn.onclick = () => { document.getElementById('account-modal').hidden = false; };
+                }
+            }
+        }
+
+        function getPath(collectionName, docId = null) {
+            // استخدام معرف التطبيق الصحيح (Dynamic ID)
+            const base = `artifacts/${envAppId}/public/data/${collectionName}`;
+            return docId ? `${base}/${docId}` : base;
+        }
+
+        function getUserPath(docId = null) {
+             const base = `artifacts/${envAppId}/users/${currentUserId}/game_data`;
+             return docId ? `${base}/${docId}` : base;
+        }
+
+        async function registerAccount(phone, password) {
+            if (isOffline) { alert("عذراً، أنت في وضع عدم الاتصال."); return; }
+            if (!db || !currentUserId) return;
+            const msgEl = document.getElementById('reg-msg');
+            msgEl.textContent = "جاري الحفظ..."; msgEl.className = "text-center mt-4 text-sm font-bold text-yellow-400 animate-pulse";
+            const docRef = doc(db, getPath('accounts', phone));
+            try {
+                const existingDoc = await getDoc(docRef);
+                if (existingDoc.exists()) {
+                    msgEl.textContent = "رقم الهاتف مسجل مسبقاً.";
+                    msgEl.className = "text-center mt-4 text-sm font-bold text-red-400";
+                    return;
+                }
+                const accountData = { phone, password, originalUid: currentUserId, name: currentUserName, score: currentScore, createdAt: new Date().toISOString() };
+                await setDoc(docRef, accountData);
+                msgEl.textContent = "تم حفظ الحساب بنجاح!";
+                msgEl.className = "text-center mt-4 text-sm font-bold text-green-400";
+                setTimeout(() => { document.getElementById('account-modal').hidden = true; }, 2000);
+            } catch (e) { console.error(e); msgEl.textContent = "خطأ في الحفظ."; msgEl.className = "text-center mt-4 text-sm font-bold text-red-400"; }
+        }
+
+        async function loginAccount(phone, password) {
+            if (isOffline) { alert("عذراً، أنت في وضع عدم الاتصال."); return; }
+            const msgEl = document.getElementById('login-msg');
+            msgEl.textContent = "جاري البحث..."; msgEl.className = "text-center mt-4 text-sm font-bold text-yellow-400 animate-pulse";
+            const docRef = doc(db, getPath('accounts', phone));
+            try {
+                const accDoc = await getDoc(docRef);
+                if (!accDoc.exists()) {
+                    msgEl.textContent = "الرقم غير موجود.";
+                    msgEl.className = "text-center mt-4 text-sm font-bold text-red-400";
+                    return;
+                }
+                const data = accDoc.data();
+                if (data.password !== password) {
+                    msgEl.textContent = "كلمة المرور خطأ.";
+                    msgEl.className = "text-center mt-4 text-sm font-bold text-red-400";
+                    return;
+                }
+                currentUserName = data.name;
+                currentScore = Math.max(currentScore, data.score || 0);
+                document.getElementById('score-display').textContent = `النتيجة: ${currentScore} نقطة`;
+                document.getElementById('player-name-display').textContent = `اللاعب: ${currentUserName}`;
+                await updateLeaderboardAndScore();
+                msgEl.textContent = `أهلاً ${currentUserName}!`;
+                msgEl.className = "text-center mt-4 text-sm font-bold text-green-400";
+                document.getElementById('name-modal').hidden = true;
+                setTimeout(() => { document.getElementById('account-modal').hidden = true; }, 2000);
+            } catch (e) { console.error(e); msgEl.textContent = "خطأ في الاسترجاع."; }
+        }
+
+        async function updateLeaderboardAndScore() {
+            if (isOffline) {
+                localStorage.setItem('localScore', currentScore);
+                localStorage.setItem('localName', currentUserName);
+                return;
+            }
+            if (!currentUserId) return;
+            const leaderboardDoc = doc(db, getPath('leaderboard', currentUserId));
+            try { await setDoc(leaderboardDoc, { score: currentScore, name: currentUserName }, { merge: true }); } catch(e) { console.error(e); }
+        }
+
+        async function loadPlayerData(uid) {
+            if (isOffline) {
+                currentScore = parseInt(localStorage.getItem('localScore') || '0');
+                currentUserName = localStorage.getItem('localName');
+                document.getElementById('score-display').textContent = `النتيجة: ${currentScore} نقطة`;
+                if (currentUserName) { renderState('initial'); checkRules(); }
+                else { document.getElementById('auth-loader').hidden = true; document.getElementById('name-modal').hidden = false; }
+                return;
+            }
+            const lbRef = doc(db, getPath('leaderboard', uid));
+            try {
+                const snap = await getDoc(lbRef);
+                if (snap.exists() && snap.data().name) {
+                    currentUserName = snap.data().name;
+                    currentScore = snap.data().score || 0;
+                    document.getElementById('score-display').textContent = `النتيجة: ${currentScore} نقطة`;
+                    renderState('initial');
+                    checkRules();
+                } else {
+                    document.getElementById('auth-loader').hidden = true;
+                    document.getElementById('name-modal').hidden = false;
+                }
+            } catch (e) { renderState('error', {message: "خطأ تحميل البيانات", techDetails: e.message}); }
+        }
+
+        function checkRules() {
+            if (!localStorage.getItem('hasSeenRules')) setTimeout(() => document.getElementById('welcome-modal').hidden = false, 500);
+        }
+
+        async function generateRiddle(lvl) {
+            currentLevel = lvl;
+            document.querySelectorAll('.level-btn').forEach(b => {
+                const active = b.dataset.level == lvl;
+                b.className = `level-btn px-5 py-2.5 text-sm sm:text-base font-semibold rounded-xl shadow-lg transition-all duration-300 border ${active ? 'bg-yellow-500 text-gray-900 border-yellow-500 transform scale-105 ring-2 ring-yellow-500/40' : 'bg-gray-800 text-yellow-500 border-gray-700 hover:border-yellow-500 hover:text-yellow-400'}`;
+            });
+            renderState('loading');
+            
+            const levelNames = { 1: "الملفّق (المستوى 1 - تبديل الحروف)", 2: "الأحجية (المستوى 2 - تقطيع الكلمة)", 3: "المعمّى (المستوى 3 - لغز مركب)" };
+            
+            const promptData = {
+                system: SYSTEM_PROMPT,
+                user: `أنشئ لغزاً جديداً من نوع: ${levelNames[lvl]}. يجب أن يكون الحل (الإجابة) اسماً عربياً فصحياً وينطبق عليه "نظام الألغاز والأحاجي".`,
+                schema: { type: "OBJECT", properties: { riddle: {type:"STRING"}, answer: {type:"STRING"} } }
+            };
+            try {
+                const txt = await callAI(promptData);
+                const obj = JSON.parse(txt);
+                currentRiddle = obj.riddle; currentAnswer = obj.answer;
+                renderState('riddle', { riddle: currentRiddle });
+            } catch (e) { renderState('error', { message: "تعذر جلب اللغز، حاول مجدداً." }); }
+        }
+
+        async function checkAnswer(e) {
+            e.preventDefault();
+            const val = document.getElementById('user-input').value.trim();
+            if(!val) return;
+            renderState('loading');
+            const checkPrompt = `
+أنت حكم ذكي يلتزم بـ "نظام الألغاز والأحاجي".
+اللغز: "${currentRiddle}"
+الجواب الصحيح (للمقارنة): "${currentAnswer}"
+إجابة المستخدم: "${val}"
+
+المطلوب:
+1. هل إجابة المستخدم صحيحة؟ (isCorrect: true/false)
+2. قدم شرحاً (feedback) يعتمد على قواعد النظام:
+   - إذا كانت صحيحة: اشرح كيف انطبقت القاعدة (مثلاً: أحسنت، فعلاً إذا قلبنا حروف كذا أصبحت كذا).
+   - إذا كانت خاطئة: اشرح القاعدة والحل الصحيح (مثلاً: خطأ، لأن الأحجية تتطلب تقطيع الكلمة، والحل الصحيح هو...).
+`;
+            const promptData = {
+                system: SYSTEM_PROMPT, // استخدام نفس الدستور للحكم أيضاً
+                user: checkPrompt,
+                schema: { type: "OBJECT", properties: { isCorrect: {type:"BOOLEAN"}, feedback: {type:"STRING"} } }
+            };
+            try {
+                const txt = await callAI(promptData);
+                const res = JSON.parse(txt);
+                renderState('feedback', res);
+                if (res.isCorrect) { currentScore++; await updateLeaderboardAndScore(); document.getElementById('score-display').textContent = `النتيجة: ${currentScore} نقطة`; }
+                currentRiddle = null;
+            } catch(e) { renderState('error', { message: "خطأ في التحقق." }); }
+        }
+
+        function activateOfflineMode() {
+            isOffline = true;
+            currentUserId = 'offline_user';
+            loadPlayerData(currentUserId);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('rules-content').innerHTML = FULL_RULES_TEXT;
+            document.getElementById('modal-rules-body').innerHTML = FULL_RULES_TEXT;
+
+            document.querySelectorAll('.level-btn').forEach(b => b.addEventListener('click', () => generateRiddle(b.dataset.level)));
+            document.getElementById('answer-form').addEventListener('submit', checkAnswer);
+            document.getElementById('next-riddle-btn').addEventListener('click', () => generateRiddle(currentLevel));
+            document.getElementById('show-answer-btn').addEventListener('click', () => {
+                renderState('feedback', {message: `الإجابة الصحيحة هي: "${currentAnswer}"`, isCorrect: false}); currentRiddle=null;
+            });
+            document.getElementById('toggle-rules-btn').addEventListener('click', function() {
+                const content = document.getElementById('rules-content');
+                content.hidden = !content.hidden;
+                this.textContent = content.hidden ? "إظهار قواعد الألغاز" : "إخفاء قواعد الألغاز";
+            });
+            const closeModal = () => { document.getElementById('welcome-modal').hidden = true; localStorage.setItem('hasSeenRules', 'true'); };
+            document.getElementById('close-modal-btn').addEventListener('click', closeModal);
+            document.getElementById('close-modal-top-btn').addEventListener('click', closeModal);
+            document.getElementById('close-account-modal').addEventListener('click', () => { document.getElementById('account-modal').hidden = true; });
+
+            const tabReg = document.getElementById('tab-register');
+            const tabLogin = document.getElementById('tab-login');
+            tabReg.addEventListener('click', () => { tabReg.className="flex-1 py-4 text-center font-bold transition-colors tab-active"; tabLogin.className="flex-1 py-4 text-center font-bold transition-colors tab-inactive"; document.getElementById('register-form-container').hidden=false; document.getElementById('login-form-container').hidden=true; });
+            tabLogin.addEventListener('click', () => { tabLogin.className="flex-1 py-4 text-center font-bold transition-colors tab-active"; tabReg.className="flex-1 py-4 text-center font-bold transition-colors tab-inactive"; document.getElementById('login-form-container').hidden=false; document.getElementById('register-form-container').hidden=true; });
+
+            document.getElementById('register-form').addEventListener('submit', (e) => { e.preventDefault(); registerAccount(document.getElementById('reg-phone').value, document.getElementById('reg-pass').value); });
+            document.getElementById('login-form').addEventListener('submit', (e) => { e.preventDefault(); loginAccount(document.getElementById('login-phone').value, document.getElementById('login-pass').value); });
+            
+            document.getElementById('name-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const name = document.getElementById('player-name-input').value.trim();
+                if(name) {
+                    currentUserName = name;
+                    document.getElementById('name-modal').hidden = true;
+                    renderState('initial');
+                    await updateLeaderboardAndScore();
+                    checkRules();
+                }
+            });
+            document.getElementById('open-login-from-welcome').addEventListener('click', () => {
+                if (isOffline) { alert("غير متوفر في وضع عدم الاتصال"); return; }
+                document.getElementById('name-modal').hidden = true;
+                document.getElementById('account-modal').hidden = false;
+                tabLogin.click(); 
+            });
+
+            document.getElementById('play-offline-btn').addEventListener('click', activateOfflineMode);
+
+            if(auth) {
+                onAuthStateChanged(auth, async (user) => {
+                    if(user) {
+                        currentUserId = user.uid;
+                        document.getElementById('auth-debug-msg').textContent = "Authenticated! Loading Data...";
+                        loadPlayerData(user.uid);
+                        try {
+                             onSnapshot(query(collection(db, getPath('leaderboard')), limit(10)), (snap) => {
+                                if(isOffline) return;
+                                const list = document.getElementById('leaderboard-list');
+                                list.innerHTML = "";
+                                const users = snap.docs.map(d => ({id:d.id, ...d.data()})).sort((a,b) => (b.score||0)-(a.score||0));
+                                if(!users.length) list.innerHTML = '<li class="text-gray-400 text-center">لا يوجد لاعبون</li>';
+                                users.forEach(u => {
+                                    const isMe = u.id === currentUserId;
+                                    const li = document.createElement('li');
+                                    li.className = `${isMe ? 'bg-yellow-900/30 border-yellow-500/40' : 'bg-gray-700/30'} p-3 rounded-xl flex justify-between items-center text-lg mb-2 transition-colors hover:bg-gray-700/50`;
+                                    li.innerHTML = `<span class="${isMe?'text-yellow-300 font-bold':''}">${u.name||'مجهول'}</span><span class="font-bold text-yellow-500">${u.score||0}</span>`;
+                                    list.appendChild(li);
+                                });
+                            }, (err) => {
+                                console.warn("Leaderboard access denied (likely permission issue)", err);
+                            });
+                        } catch (e) {
+                            console.warn("Snapshot error", e);
+                        }
+                    } else {
+                        document.getElementById('auth-debug-msg').textContent = "Signing in anonymously...";
+                        try { 
+                            if(initialAuthToken) await signInWithCustomToken(auth, initialAuthToken); 
+                            else await signInAnonymously(auth); 
+                        } catch(e) { 
+                            console.error("Auth failed", e);
+                            const currentDomain = window.location.hostname;
+                            renderState('error', {
+                                message: `فشل الاتصال بخادم المصادقة. هذا يحدث عادة لأن النطاق (Domain) الحالي غير مسموح به.`,
+                                techDetails: `Error: ${e.message}\n\nCurrent Domain: ${currentDomain}\n\nSolution: Go to Firebase Console -> Authentication -> Settings -> Authorized Domains -> Add "${currentDomain}"`
+                            }); 
+                        }
+                    }
+                });
+            } else {
+                activateOfflineMode();
+            }
+        });
+    </script>
+</body>
+</html>
+
+
