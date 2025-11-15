@@ -4,733 +4,1076 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>نظام الألغاز والأحاجي</title>
-    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://cdn.tailwindcss.com">
-    <link rel="preconnect" href="https://www.gstatic.com">
-    <link rel="preconnect" href="https://firestore.googleapis.com">
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1.700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@400;700&display=swap');
+        body {
+            font-family: 'Amiri', serif;
+            background: linear-gradient(135deg, #0f172a 0%, #302b63 100%);
+            overflow: hidden;
+        }
+        /* (جديد) إخفاء المحتوى الرئيسي أثناء التحميل */
+        body.is-loading .game-card {
+            opacity: 0;
+        }
         
-        body { font-family: 'Amiri', serif; }
-        .title-font { font-family: 'Aref Ruqaa', serif; }
-        [hidden] { display: none !important; }
+        h1, h2, h3, h4, p, span, div, button, input {
+            font-family: 'Amiri', serif;
+            font-size: 1.1rem;
+        }
+        h1 { font-size: 2.75rem !important; font-weight: 700; }
+        .puzzle-question { font-size: 1.75rem !important; font-weight: 700; line-height: 1.6; }
+        .puzzle-rule { font-size: 1rem !important; }
+        .choice-label { font-size: 1.1rem !important; font-weight: 700; }
+        .game-button { font-size: 1.2rem !important; font-weight: 700; }
+        .back-button { font-size: 1rem !important; }
+        .stat-item span { font-size: 0.85rem !important; font-weight: 400; }
+        .stat-item strong { font-size: 1.35rem !important; font-weight: 700; }
 
-        .title-gradient {
-            background-image: linear-gradient(to right, #fde047, #facc15, #eab308);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-fill-color: transparent;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        .game-card {
+            background: rgba(17, 25, 40, 0.85);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.125);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-height: 95vh;
+            overflow-y: auto;
+            transition: opacity 0.3s ease-in-out;
+        }
+        
+        /* (جديد) تصميم شريط التمرير للنافذة المنبثقة */
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        .modal-content::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 10px;
+        }
+        .modal-content::-webkit-scrollbar-thumb {
+            background-color: #4b5563;
+            border-radius: 10px;
+            border: 2px solid rgba(30, 41, 59, 0.95);
+        }
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background-color: #6b7280;
         }
 
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #ca8a04; border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #eab308; }
-        
-        .loader {
-            width: 48px; height: 48px;
-            border: 5px solid #374151; border-bottom-color: #facc15;
-            border-radius: 50%; display: inline-block;
-            animation: rotation 1s linear infinite;
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 10px 16px;
+            margin-bottom: 1.5rem;
         }
-        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
+        .stat-item { text-align: center; color: #d1d5db; }
+        .stat-item span { display: block; color: #9ca3af; text-transform: uppercase; }
+        .stat-item strong { display: block; color: #f3f4f6; min-width: 40px; }
+        #stat-highscore strong { color: #facc15; }
+        #stat-streak strong { color: #38bdf8; }
 
-        .tab-active { border-bottom: 2px solid #facc15; color: #facc15; background: rgba(250, 204, 21, 0.05); }
-        .tab-inactive { color: #9ca3af; }
-        .tab-inactive:hover { color: #e5e7eb; background: rgba(255, 255, 255, 0.05); }
+        .choice-label {
+            display: block;
+            padding: 12px 20px;
+            background-color: rgba(30, 41, 59, 0.8);
+            border: 1px solid #374151;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            color: #d1d5db;
+            text-align: center;
+        }
+        .choice-label:hover {
+            background-color: rgba(55, 65, 81, 0.8);
+            border-color: #4b5563;
+        }
+        input[type='radio'] { display: none; }
+        input[type='radio']:checked + .choice-label {
+            background-color: #0c4a6e;
+            border-color: #0ea5e9;
+            color: #e0f2fe;
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.4);
+        }
+
+        .game-input {
+            background-color: rgba(30, 41, 59, 0.8);
+            border: 1px solid #374151;
+            color: #f3f4f6;
+            transition: all 0.2s ease-in-out;
+            font-size: 1.25rem;
+        }
+        .game-input::placeholder { color: #6b7280; }
+        .game-input:focus {
+            outline: none;
+            border-color: #0ea5e9;
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.4);
+            background-color: rgba(30, 41, 59, 1);
+        }
+        .game-input-correct {
+            border-color: #10b981 !important;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5) !important;
+        }
+        .game-input-wrong {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.5) !important;
+        }
+
+        .game-button {
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .game-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        .game-button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .game-button-blue { background: linear-gradient(45deg, #0ea5e9, #0c4a6e); }
+        .game-button-blue:hover:not(:disabled) { background: linear-gradient(45deg, #38bdf8, #075985); }
+        .game-button-green { background: linear-gradient(45deg, #10b981, #057a55); }
+        .game-button-green:hover:not(:disabled) { background: linear-gradient(45deg, #34d399, #046c4e); }
+        .game-button-yellow { background: linear-gradient(45deg, #f59e0b, #b45309); }
+        .game-button-yellow:hover:not(:disabled) { background: linear-gradient(45deg, #facc15, #d97706); }
+        .game-button-gray { background: linear-gradient(45deg, #4b5563, #1f2937); }
+        .game-button-gray:hover:not(:disabled) { background: linear-gradient(45deg, #6b7280, #374151); }
+        .game-button-red { background: linear-gradient(45deg, #991b1b, #7f1d1d); }
+        .game-button-red:hover:not(:disabled) { background: linear-gradient(45deg, #b91c1c, #991b1b); }
+
+        .back-button {
+            color: #94a3b8;
+            text-align: center;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .back-button:hover { color: #e2e8f0; }
+
+        .puzzle-screen {
+            background: rgba(17, 25, 40, 0.9);
+            border: 1px solid #374151;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.4);
+            transition: opacity 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        #feedback-message {
+            transition: all 0.3s ease;
+            text-shadow: 0 0 10px;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        .feedback-correct { color: #34d399; text-shadow: 0 0 10px rgba(52, 211, 153, 0.7); }
+        .feedback-wrong { color: #f87171; text-shadow: 0 0 10px rgba(248, 113, 113, 0.7); }
+        .feedback-info { color: #60a5fa; text-shadow: 0 0 10px rgba(96, 165, 250, 0.7); }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
+            20%, 40%, 60%, 80% { transform: translateX(6px); }
+        }
+        .animate-shake { animation: shake 0.5s ease-in-out; }
+
+        .screen {
+            transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+            width: 100%;
+        }
+        .screen.hidden {
+            opacity: 0;
+            transform: scale(0.95);
+            pointer-events: none;
+            position: absolute;
+            left: -9999px;
+        }
+        .card-wrapper {
+            position: relative;
+            min-height: 550px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid #374151;
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-overlay.visible .modal-content {
+            transform: scale(1);
+        }
+        .modal-content h3 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #e0f2fe;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .modal-content h4 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            border-bottom: 1px solid #4b5563;
+            padding-bottom: 0.25rem;
+        }
+        .modal-content p {
+            font-size: 1.1rem;
+            color: #d1d5db;
+            margin-bottom: 0.75rem;
+            line-height: 1.8;
+        }
+        .modal-content p strong {
+            color: #f3f4f6;
+            font-weight: 700;
+        }
+        .modal-content ul {
+            list-style-type: decimal;
+            margin-right: 1.5rem;
+            color: #d1d5db;
+        }
+        .modal-content li {
+            margin-bottom: 0.5rem;
+            line-height: 1.8;
+        }
+        .color-f1 { color: #60a5fa; }
+        .color-f2 { color: #34d399; }
+        .color-f3 { color: #fde047; }
+        .color-f4 { color: #f87171; }
+        .color-f5 { color: #c084fc; }
+        .color-f6 { color: #9ca3af; }
+
+        /* (جديد) شاشة التحميل */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #0f172a 0%, #302b63 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+        #loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #e0f2fe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading-text {
+            color: #e0f2fe;
+            margin-top: 1.5rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        /* (جديد) زر كتم الصوت والتلميح */
+        #mute-button {
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid #374151;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #9ca3af;
+            transition: all 0.2s ease;
+        }
+        #mute-button:hover {
+            color: #e0f2fe;
+            background: rgba(55, 65, 81, 0.8);
+            border-color: #4b5563;
+        }
+        #mute-button svg {
+            width: 20px;
+            height: 20px;
+        }
+        #mute-tooltip {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            top: 1.5rem;
+            left: 4.5rem;
+            background: #1e293b;
+            color: #e0f2fe;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            transition: opacity 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        #mute-button:hover + #mute-tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+        .icon-off { display: none; }
+        
+        /* (جديد) زر مشاركة النتيجة */
+        #last-score-container {
+            text-align: center;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+        #last-score-text {
+            color: #d1d5db;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+        #share-button {
+            font-size: 1rem !important;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(45deg, #10b981, #057a55);
+        }
+        #share-feedback {
+            color: #34d399;
+            font-size: 0.9rem;
+            height: 1rem;
+            margin-top: 0.5rem;
+        }
     </style>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-black text-white p-4 sm:p-6 selection:bg-yellow-500 selection:text-black">
+<body class="is-loading flex items-center justify-center min-h-screen p-4">
 
-    <div class="container mx-auto max-w-3xl">
-        <!-- --- الهيدر --- -->
-        <header class="text-center my-6 relative">
-            <h1 class="text-4xl sm:text-5xl font-bold title-gradient title-font py-2 leading-relaxed">نظام الألغاز والأحاجي</h1>
-            <p class="text-xs sm:text-sm md:text-base lg:text-lg text-gray-300 mt-2 whitespace-pre font-light tracking-wide opacity-90">
-واضع هذا النظام ومرتبه: محمد الصدر بن السيد محمد صادق الصدر
-النجف الأشرف - الجمهورية العراقية
-بتاريخ عصر يوم الأربعاء ١٣٧٩/١٢/١٣ هـ الموافق ٦/٨/ ١٩٦٠م
-            </p>
+    <!-- (جديد) شاشة التحميل -->
+    <div id="loading-screen">
+        <div class="spinner"></div>
+        <p class="loading-text">جارٍ تحميل نظام الألغاز...</p>
+    </div>
+
+    <div class="game-card rounded-xl p-6 md:p-8 w-full max-w-lg m-4 relative">
+        
+        <!-- (جديد) زر كتم الصوت -->
+        <button id="mute-button">
+            <svg class="icon-on" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.718-.54-1.99-1.354a9.009 9.009 0 0 1-.3-1.003V12c0-.362.068-.71.187-1.046.12-.336.31-.643.553-.89l.262-.262c.243-.247.553-.437.89-.553.336-.12.684-.187 1.046-.187h2.24Z" /></svg>
+            <svg class="icon-off" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.718-.54-1.99-1.354a9.009 9.009 0 0 1-.3-1.003V12c0-.362.068-.71.187-1.046.12-.336.31-.643.553-.89l.262-.262c.243-.247.553-.437.89-.553.336-.12.684-.187 1.046-.187h2.24Z" /></svg>
+        </button>
+        <div id="mute-tooltip">كتم الصوت</div>
+
+
+        <h1 class="text-3xl md:text-4xl text-center text-white mb-2">
+            نظام الألغاز
+        </h1>
+        <p class="text-center text-blue-300 mb-8 text-sm font-medium" style="font-size: 1.1rem !important;">
             
-            <div id="user-info" class="mt-6 flex flex-col items-center animate-fade-in" hidden>
-                <div class="flex items-center gap-4 mb-2">
-                    <span id="score-display" class="font-bold text-xl text-green-400 drop-shadow-md">النتيجة: 0 نقطة</span>
-                    <button id="account-btn" class="text-sm bg-gray-800 hover:bg-gray-700 text-yellow-400 px-4 py-1.5 rounded-full border border-yellow-500/30 transition-colors flex items-center gap-2 shadow-lg group">
-                        <span>👤</span> حسابي
-                        <span class="text-xs text-gray-500 group-hover:text-yellow-200 transition-colors">(حفظ/استرجاع)</span>
+        </p>
+
+        <div class="card-wrapper">
+
+            <!-- منطقة الاختيار (شاشة 1) -->
+            <div id="selection-container" class="screen space-y-6">
+
+                <!-- (جديد) قسم مشاركة النتيجة -->
+                <div id="last-score-container" class="hidden">
+                    <p id="last-score-text">كانت نتيجتك الأخيرة: 100</p>
+                    <button id="share-button" class="w-full text-white p-2 rounded-lg text-lg game-button">
+                        مشاركة النتيجة
+                    </button>
+                    <div id="share-feedback"></div>
+                </div>
+
+                <fieldset>
+                    <legend class="px-2 mb-3 font-semibold text-lg text-gray-200" style="font-size: 1.3rem !important;">اختر المستوى:</legend>
+                    <div class="grid grid-cols-3 gap-3">
+                        <label>
+                            <input type="radio" name="difficulty" value="سهل" checked onchange="playSound('click')">
+                            <span class="choice-label">سهل</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="difficulty" value="متوسط" onchange="playSound('click')">
+                            <span class="choice-label">متوسط</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="difficulty" value="صعب" onchange="playSound('click')">
+                            <span class="choice-label">صعب</span>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <!-- (تم الحذف) قسم اختيار نوع اللغز -->
+
+                <div class="grid grid-cols-2 gap-4 pt-4">
+                     <button id="how-to-play-button" class="w-full text-white p-4 rounded-lg text-lg game-button game-button-gray">
+                        كيفية اللعب؟
+                    </button>
+                    <button id="start-button" class="w-full text-white p-4 rounded-lg text-lg game-button game-button-blue">
+                        ابدأ اللعب
                     </button>
                 </div>
-                <span id="player-name-display" class="text-lg text-yellow-500 font-bold border-b border-yellow-500/20 pb-1 px-4"></span>
-                <span id="offline-indicator" class="text-xs text-red-400 mt-1 font-bold bg-red-900/20 px-2 py-1 rounded-full border border-red-500/20" hidden>وضع غير متصل (الحفظ محلي فقط)</span>
-            </div>
-        </header>
+                
+                <!-- (جديد) زر مسح الرصيد -->
+                <button id="reset-highscore-button" class="w-full text-white p-3 rounded-lg text-sm game-button game-button-red opacity-70" style="font-size: 1rem !important;">
+                    مسح أعلى رصيد
+                </button>
 
-        <!-- --- التحكم بالمستوى --- -->
-        <div id="level-controls" class="flex justify-center gap-3 sm:gap-4 my-8" hidden>
-            <button data-level="1" class="level-btn px-5 py-2.5 text-sm sm:text-base font-semibold rounded-xl shadow-lg transition-all duration-300 bg-gray-800 text-yellow-500 border border-gray-700 hover:border-yellow-500 hover:text-yellow-400 hover:-translate-y-0.5">ملفّق (سهل)</button>
-            <button data-level="2" class="level-btn px-5 py-2.5 text-sm sm:text-base font-semibold rounded-xl shadow-lg transition-all duration-300 bg-gray-800 text-yellow-500 border border-gray-700 hover:border-yellow-500 hover:text-yellow-400 hover:-translate-y-0.5">أحجية (متوسط)</button>
-            <button data-level="3" class="level-btn px-5 py-2.5 text-sm sm:text-base font-semibold rounded-xl shadow-lg transition-all duration-300 bg-gray-800 text-yellow-500 border border-gray-700 hover:border-yellow-500 hover:text-yellow-400 hover:-translate-y-0.5">معمّى (صعب)</button>
+            </div>
+
+            <!-- منطقة اللغز والإدخال (شاشة 2) -->
+            <div id="puzzle-container" class="screen hidden space-y-5">
+                
+                <div class="stats-bar">
+                    <div id="stat-score" class="stat-item">
+                        <span>النقاط</span>
+                        <strong>0</strong>
+                    </div>
+                    <div id="stat-highscore" class="stat-item">
+                        <span>أعلى رصيد</span>
+                        <strong>0</strong>
+                    </div>
+                    <div id="stat-streak" class="stat-item">
+                        <span>الستريك</span>
+                        <strong>0</strong>
+                    </div>
+                </div>
+
+                <div id="puzzle-screen-content" class="puzzle-screen p-6 rounded-lg text-right min-h-[150px] flex flex-col justify-center">
+                    <p id="puzzle-rule" class="puzzle-rule mb-3 hidden"></p>
+                    <p id="puzzle-question" class="puzzle-question text-white"></p>
+                </div>
+
+                <div class="space-y-4">
+                    <input 
+                        type="text" 
+                        id="answer-input" 
+                        placeholder="اكتب إجابتك هنا..."
+                        class="w-full p-4 border rounded-lg text-right text-lg game-input"
+                    >
+                    <div class="grid grid-cols-2 gap-4">
+                        <button id="check-button" class="w-full text-white p-4 rounded-lg text-lg game-button game-button-green">
+                            تحقق من الإجابة
+                        </button>
+                        <button id="show-answer-button" class="w-full text-white p-4 rounded-lg text-lg game-button game-button-yellow">
+                            معرفة الجواب
+                        </button>
+                    </div>
+                </div>
+
+                <div id="feedback-message" class="mt-4 text-center h-8"></div>
+                
+                <button id="back-to-settings-button" class="back-button w-full mt-4">
+                    العودة للإعدادات
+                </button>
+            </div>
         </div>
 
-        <!-- --- منطقة اللعبة الرئيسية --- -->
-        <main id="game-main" class="bg-gradient-to-b from-gray-800 to-gray-800/95 border border-gray-700 p-6 rounded-2xl shadow-2xl min-h-[280px] flex flex-col justify-center items-center relative overflow-hidden">
+        <p class="text-center text-xs text-gray-500 mt-6" style="font-size: 0.8rem !important;">
+            الإصدار 1.0 (اللمسات النهائية)
+        </p>
+    </div>
+
+    <!-- نافذة كيفية اللعب (المحتوى الكامل) -->
+    <div id="how-to-play-modal" class="modal-overlay">
+        <div class="modal-content" dir="rtl">
+            <h3>نظام الألغاز والإحاجي</h3>
             
-            <!-- زخرفة خلفية خفيفة -->
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-yellow-500/20 to-transparent"></div>
+            <h4 class="color-f1">الفصل الأول: قواعد عامة</h4>
+            <p><strong>المادة الأولى:</strong> يُلغز بالاسم فقط دون الفعل أو اسم الفعل أو الفاعل أو المفعول أو صيغ المبالغة والتعجب والتفضيل أو أسماء الزمان أو المكان وما أشبه ذلك مما لا يدلّ على معنى معين قائم بذاته.</p>
+            <p><strong>المادة الثانية:</strong> الاسم الذي يُلغّز به يعمّ العلم الشخصي أو أسماء الأشياء أو النبات أو الحيوان أو الصفات أو غيرها.</p>
+            <p><strong>المادة الثالثة:</strong> يجب أن لا يكون الاسم الملغز فيه:</p>
+            <ul>
+                <li>١- من لغة أعجمية كله أو جزؤه.</li>
+                <li>٢- ألا يكون مركباً من ضمير، أو الألف واللام أو ياء النسبة أو غيرها.</li>
+            </ul>
+            <p><strong>المادة الرابعة:</strong> يجب أن يحرر الملغز عن اللغز واضح ومعلوم لدى أكثر الملمين إليهم.</p>
+            <p><strong>المادة الخامسة:</strong> العبارة التي يعبر بها عن اللغز يجوز أن تكون كلمة أو جملة أو بعض جملة أو مضافة إلى ضمير وغير ذلك.</p>
+            <p><strong>المادة السادسة:</strong> أي اسم جاء حالة موافقاً للشروط التي اعتبرت في اللغز فهو مقبول وإن لم يكن نفس الاسم المنوي.</p>
+            <p><strong>المادة السابعة:</strong> إذا جاء الحل بما يخالف المادة الأولى أو الثالثة يرفض.</p>
 
-            <div id="auth-loader" class="text-center">
-                <div class="loader"></div>
-                <p class="text-gray-400 mt-4">جاري الاتصال بقاعدة البيانات...</p>
-                <p id="auth-debug-msg" class="text-xs text-gray-600 mt-2 dir-ltr">Initializing...</p>
-            </div>
+            <h4 class="color-f2">الفصل الثاني: الملفق</h4>
+            <p><strong>المادة الثامنة:</strong> كيفية اللغز الملفق: هو تبديل مكان الحروف بحيث ينتج منه كلمة أو عدة كلمات ذات معنى.</p>
+            <p><strong>المادة التاسعة:</strong> يجوز أن يكون اللغز أكثر من كلمة واحدة.</p>
+            <p><strong>المادة العاشرة:</strong> يجب أن تكون الكلمة أو عدة الكلمات التي يُعبّر بها عن اللغز ذات معنى مفهوم لغةً.</p>
+            <p><strong>المادة الحادية عشرة:</strong> ليست الحركات محل اعتبار في اللغز الملفق.</p>
+            <p><strong>المادة الثانية عشرة:</strong> يجب ألا يكون في صيغة اللغز حروف زائدة أو ناقصة فتحدث التشويش والارتباك.</p>
 
-            <div id="loader" class="text-center" hidden>
-                <div class="loader"></div>
-                <p class="text-yellow-400 text-lg animate-pulse mt-4">جاري التفكير بلغز جديد انتظر رجاءاً...</p>
-            </div>
+            <h4 class="color-f3">الفصل الثالث: للأحجية</h4>
+            <p><strong>المادة الثالثة عشرة:</strong> الأحجية هي تقطيع الكلمة إلى مقطع أو أكثر بحيث ينتج من كل مقطع معه معنى تام بذاته، كل مقطع بانفراده.</p>
+            <p><strong>المادة الرابعة عشرة:</strong> يجب أن يكون بين المقطعين علاقة عامة إما الإضافة أو الوصفية أو الخبرية وما أشبه.</p>
+            <p><strong>المادة الخامسة عشرة:</strong> يجب ألا يحصل تكرار في الحروف في ضمن تقطيع الاسم إلى مقطعين أو أكثر.</p>
+            <p><strong>المادة السادسة عشرة:</strong> يجوز أن يعرف المقطع الواحد بكلمة واحدة أو عدة كلمات.</p>
+            <p><strong>المادة السابعة عشرة:</strong> يجب أن تكون الكلمة أو الكلمات التي يعرّف بواسطتها اللغز لا غامضة بحيث يعسر فهمها ولا واضحة بحيث يسهل حلها.</p>
 
-            <div id="error-message" class="text-red-400 text-center animate-fade-in flex flex-col items-center p-4 bg-red-900/10 rounded-xl border border-red-500/20 w-full" hidden>
-                <p class="font-bold text-xl mb-2 text-red-500">⚠️ تنبيه</p>
-                <p id="error-text" class="text-gray-300 text-lg mb-4 max-w-md leading-relaxed text-center"></p>
-                
-                <div id="tech-details" class="bg-gray-900 p-3 rounded text-xs text-left text-gray-400 w-full mb-4 hidden font-mono overflow-x-auto"></div>
+            <h4 class="color-f4">الفصل الرابع: اللغز</h4>
+            <p><strong>المادة الثامنة عشرة:</strong> لا اسم لهذا اللغز فلذا اعتبرناه (لغزاً) بالمعنى الأعم.</p>
+            <p><strong>المادة التاسعة عشرة:</strong> كيفية اللغز بالمعنى الأعم: هي جمع حرفين فأكثر، سواء كانا متلاصقين في أصل الكلمة أو منفصلين أم متقدمين أو متأخرين، بحيث يحصل بجمعها معنى معين، ثم يأتي الملغز بكلمة ترادفه أو تدل عليه.</p>
+            <p><strong>المادة العشرون:</strong> يجب تعيين ما يلي في كل اسم ملغز:</p>
+            <ul>
+                <li>١- عدد حروفه.</li>
+                <li>٢- أنه إسم لأي صنف من الأشياء.</li>
+                <li>٣- أنه هل يحتوي أو لا يحتوي على الألف بحساب (أبجد).</li>
+            </ul>
+            <p><strong>المادة الحادية والعشرون:</strong> يجب استيفاء جميع حروف الاسم على التبادل بينها.</p>
+            <p><strong>المادة الثانية والعشرون:</strong> يجوز أن تتكرر حروف الاسم في أي مقطع من المقاطع، ولا يجوز تكرار الحرف الواحد في المقطع الواحد أكثر من مرة واحدة.</p>
+            <p><strong>المادة الثالثة والعشرون:</strong> يجب تعيين المكان العددي للحرف من بين مجموع الحروف.</p>
+            <p><strong>المادة الرابعة والعشرون:</strong> يشترك كل من الأحجية واللغز بالمعنى الأخص بأن العبارة التي يعرف بها الاسم أو الحرف يجب أن تكون مفهومة لغةً وعرفاً.</p>
 
-                <div class="flex gap-3 flex-wrap justify-center">
-                    <button onclick="location.reload()" class="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm transition-colors shadow-lg">إعادة المحاولة</button>
-                    <button id="play-offline-btn" class="px-6 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded-lg text-sm transition-colors shadow-lg">متابعة اللعب (Offline)</button>
-                </div>
-            </div>
+            <h4 class="color-f5">الفصل الخامس: المعمّى</h4>
+            <p><strong>المادة الخامسة والعشرون:</strong> المعمّى: هو اللغز الذي استعملت فيه مرحلتان أو أكثر في طريق حلّه.</p>
+            <p><strong>المادة السادسة والعشرون:</strong> لا يجب أن تكون عبارة المعمّى واضحة، بل فقط يجب كونها ذات مدلول لغوي تام.</p>
+            <p><strong>المادة السابعة والعشرون:</strong> يجوز أن يكون كل من المرحلتين أو الأكثر لغزاً مما سبق في الفصول الثلاثة السابقة، أو يكون شيئاً آخر كحساب أبجد -مثلاً-.</p>
 
-            <div id="riddle-container" class="w-full text-center animate-fade-in" hidden>
-                <div class="bg-gray-900/30 p-6 rounded-xl border border-gray-700/50 mb-6">
-                    <h2 id="riddle-text" class="text-2xl sm:text-3xl font-bold whitespace-pre-wrap leading-relaxed text-yellow-50">نص اللغز هنا</h2>
-                </div>
-                
-                <form id="answer-form" class="flex flex-col sm:flex-row gap-3 justify-center">
-                    <input type="text" id="user-input" placeholder="اكتب إجابتك هنا..." class="flex-grow p-4 rounded-xl bg-gray-700 text-white text-lg text-center sm:text-right border border-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all shadow-inner" autocomplete="off" />
-                    <button type="submit" id="submit-btn" class="px-8 py-4 bg-gradient-to-br from-green-600 to-green-700 text-white font-bold rounded-xl text-lg shadow-lg hover:from-green-500 hover:to-green-600 disabled:opacity-50 hover:shadow-green-500/20 transition-all transform hover:-translate-y-0.5">تحقق من الإجابة</button>
-                </form>
-                <button id="show-answer-btn" class="mt-4 text-sm text-yellow-500 hover:text-yellow-300 underline transition-colors opacity-80 hover:opacity-100">لم أعرف الحل (اعرض الإجابة)</button>
-            </div>
+            <h4 class="color-f6">الفصل السادس: تتمة</h4>
+            <p><strong>المادة الثامنة والعشرون:</strong> كل ما لم يُذكر في هذا النظام فهو جائز.</p>
+            <p><strong>المادة التاسعة والعشرون:</strong> هذا النظام مختص باللغز اللغة العربية.</p>
+            <p><strong>المادة الثلاثون:</strong> يجب على كل فرد عند استعمال الألغاز أن يتبع هذا النظام بمجرد علمه به، حالاً.</p>
 
-            <div id="feedback-container" class="text-center px-4 w-full animate-fade-in" hidden>
-                <div class="mb-6 p-4 rounded-xl bg-gray-900/40 border border-gray-700/30">
-                    <p id="feedback-text" class="text-xl font-bold leading-loose whitespace-pre-wrap">نص التغذية الراجعة</p>
-                </div>
-                <button id="next-riddle-btn" class="mt-2 px-8 py-3 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-bold rounded-xl text-lg shadow-lg hover:from-blue-500 hover:to-blue-600 hover:shadow-blue-500/20 transition-all transform hover:-translate-y-0.5">اللغز التالي</button>
-            </div>
+            <button id="close-modal-button" class="w-full text-white p-3 rounded-lg text-lg game-button game-button-blue mt-6">
+                فهمت! (إغلاق)
+            </button>
+        </div>
+    </div>
 
-            <div id="initial-message" class="text-xl text-gray-400 text-center animate-fade-in" hidden>
-                <span class="block text-5xl mb-4 opacity-50">✨</span>
-                اختر مستوى لبدء اللغز الأول!
-            </div>
-        </main>
+
+    <script>
+        // --- [المنطق المطور بالكامل] ---
         
-        <!-- --- لوحة المتصدرين --- -->
-        <div class="w-full max-w-sm mx-auto bg-gray-800/50 border border-gray-700 p-5 rounded-2xl mt-8 backdrop-blur-sm">
-            <h3 class="text-xl font-bold text-center text-yellow-400 mb-4 flex items-center justify-center gap-2">
-                <span>🏆</span> لوحة المتصدرين
-            </h3>
-            <ol id="leaderboard-list" class="space-y-2">
-                <li class="text-gray-400 text-center text-sm">جاري تحميل اللوحة...</li>
-            </ol>
-        </div>
-
-        <!-- --- زر إظهار القواعد --- -->
-        <div class="w-full max-w-2xl mx-auto mt-6 text-right px-4">
-            <button id="toggle-rules-btn" class="w-full text-lg font-bold text-yellow-500/80 hover:text-yellow-400 transition-colors border-b border-dashed border-yellow-500/30 pb-1">إظهار قواعد الألغاز</button>
-            <div id="rules-content" class="mt-4 space-y-4 text-gray-300 overflow-y-auto max-h-60 pr-2 custom-scrollbar leading-loose bg-gray-800/80 p-4 rounded-xl border border-gray-700" hidden></div>
-        </div>
-    </div>
-
-    <!-- --- نافذة إدارة الحساب (تسجيل/دخول) --- -->
-    <div id="account-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4" hidden>
-        <div class="bg-gray-800 border border-yellow-500/30 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in transform scale-100 transition-transform">
-            <div class="flex border-b border-gray-700 bg-gray-900/50">
-                <button id="tab-register" class="flex-1 py-4 text-center font-bold transition-colors tab-active">حفظ التقدم</button>
-                <button id="tab-login" class="flex-1 py-4 text-center font-bold transition-colors tab-inactive">استرداد حساب</button>
-            </div>
-            
-            <div class="p-8 relative">
-                <button id="close-account-modal" class="absolute top-4 left-4 text-gray-500 hover:text-white transition-colors text-2xl">&times;</button>
-
-                <!-- نموذج التسجيل -->
-                <div id="register-form-container">
-                    <p class="text-gray-300 mb-6 text-sm text-center leading-relaxed">احفظ نتيجتك واسمك لكي لا تضيع منك أبداً.<br>أدخل رقم هاتفك وكلمة مرور سرية.</p>
-                    <form id="register-form" class="space-y-4">
-                        <input type="tel" id="reg-phone" placeholder="رقم الهاتف (مثال: 07700000000)" class="w-full p-3.5 rounded-xl bg-gray-700/50 border border-gray-600 text-white text-right focus:border-yellow-500 focus:bg-gray-700 outline-none transition-colors" required>
-                        <input type="password" id="reg-pass" placeholder="كلمة السر" class="w-full p-3.5 rounded-xl bg-gray-700/50 border border-gray-600 text-white text-right focus:border-yellow-500 focus:bg-gray-700 outline-none transition-colors" required>
-                        <button type="submit" class="w-full py-3.5 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded-xl shadow-lg transition-all hover:shadow-yellow-500/20">حفظ وتثبيت الحساب</button>
-                    </form>
-                    <p id="reg-msg" class="text-center mt-4 text-sm font-bold min-h-[24px]"></p>
-                </div>
-
-                <!-- نموذج الدخول -->
-                <div id="login-form-container" hidden>
-                    <p class="text-gray-300 mb-6 text-sm text-center leading-relaxed">أدخل رقم هاتفك وكلمة المرور<br>لاسترجاع نتيجتك واسمك القديم.</p>
-                    <form id="login-form" class="space-y-4">
-                        <input type="tel" id="login-phone" placeholder="رقم الهاتف المسجل" class="w-full p-3.5 rounded-xl bg-gray-700/50 border border-gray-600 text-white text-right focus:border-yellow-500 focus:bg-gray-700 outline-none transition-colors" required>
-                        <input type="password" id="login-pass" placeholder="كلمة السر" class="w-full p-3.5 rounded-xl bg-gray-700/50 border border-gray-600 text-white text-right focus:border-yellow-500 focus:bg-gray-700 outline-none transition-colors" required>
-                        <button type="submit" class="w-full py-3.5 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl shadow-lg transition-all hover:shadow-green-500/20">استرجاع البيانات</button>
-                    </form>
-                    <p id="login-msg" class="text-center mt-4 text-sm font-bold min-h-[24px]"></p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- --- نافذة إدخال الاسم الأولي --- -->
-    <div id="name-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm p-4" hidden>
-        <div class="bg-gray-800 border border-yellow-500/50 rounded-2xl shadow-2xl w-full max-w-md p-8 text-center animate-fade-in relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600"></div>
-            <h2 class="text-3xl font-bold text-yellow-400 title-font mb-3 mt-2">مرحباً بك أيها اللبيب</h2>
-            <p class="text-gray-300 mb-8 text-sm opacity-80">لتبدأ رحلتك، يرجى تسجيل اسمك في السجل:</p>
-            <form id="name-form" class="flex flex-col gap-4">
-                <input type="text" id="player-name-input" placeholder="اكتب اسمك أو لقبك هنا..." maxlength="20" class="p-4 rounded-xl bg-gray-900 text-white text-lg text-center border border-gray-700 focus:outline-none focus:border-yellow-500 focus:bg-gray-800 transition-colors placeholder-gray-600" required>
-                <button type="submit" class="px-6 py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 text-white font-bold rounded-xl text-lg shadow-lg hover:shadow-xl hover:from-yellow-500 hover:to-yellow-400 transition-all transform hover:-translate-y-0.5">ابدأ اللعب</button>
-            </form>
-            <button id="open-login-from-welcome" class="mt-6 text-sm text-gray-500 hover:text-gray-300 underline transition-colors">لديك حساب سابق؟ اضغط هنا للاسترجاع</button>
-        </div>
-    </div>
-
-    <!-- --- نافذة القواعد --- -->
-    <div id="welcome-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4" hidden>
-        <div class="bg-gray-800 border border-yellow-500/40 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden animate-fade-in">
-            <div class="bg-gray-900/80 p-5 border-b border-gray-700 flex justify-between items-center backdrop-blur-sm">
-                <h2 class="text-2xl font-bold text-yellow-400 title-font">📜 الدستور (القواعد)</h2>
-                <button id="close-modal-top-btn" class="text-gray-500 hover:text-red-400 transition-colors text-2xl">&times;</button>
-            </div>
-            <div id="modal-rules-body" class="p-8 overflow-y-auto custom-scrollbar text-right leading-loose text-gray-300 bg-gray-800 text-lg"></div>
-            <div class="p-5 border-t border-gray-700 bg-gray-900/80 text-center backdrop-blur-sm">
-                <button id="close-modal-btn" class="px-10 py-3 bg-gradient-to-r from-yellow-600 to-yellow-500 text-white font-bold rounded-xl text-lg shadow-lg hover:from-yellow-500 hover:to-yellow-400 transition-all transform hover:-translate-y-0.5">فهمت وأتعهد بالالتزام</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- --- JavaScript --- -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, limit, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAb_fJlWiQTUDv4aoWpYmAN3fBC6ro90Bk",
-            authDomain: "job-days.firebaseapp.com",
-            projectId: "job-days",
-            storageBucket: "job-days.firebasestorage.app",
-            messagingSenderId: "167982996813",
-            appId: "1:167982996813:web:ba22f0e8638e56963aab04"
+        // (جديد) متغيرات التحكم بالصوت
+        let isMuted = false;
+        
+        // 1. إعدادات الصوت
+        const synths = {
+            click: new Tone.MembraneSynth().toDestination(),
+            start: new Tone.PluckSynth().toDestination(),
+            correct: new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "triangle" },
+                envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.2 }
+            }).toDestination(),
+            wrong: new Tone.MonoSynth({
+                oscillator: { type: "square" },
+                envelope: { attack: 0.05, decay: 0.2, sustain: 0, release: 0.1 }
+            }).toDestination(),
+            info: new Tone.PluckSynth().toDestination(),
         };
-
-        const envAppId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.projectId;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : undefined;
-
-        let app, auth, db;
-        let isOffline = false;
-
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            setLogLevel('silent'); 
-        } catch (e) { 
-            console.error("Init Error", e); 
-            isOffline = true;
+        async function playSound(soundName) {
+            // (جديد) التحقق إذا كان الصوت مكتوماً
+            if (isMuted && soundName !== 'force-click') return; 
+            
+            try {
+                if (Tone.context.state !== 'running') {
+                    await Tone.start();
+                }
+                if (soundName === 'correct') {
+                    synths.correct.triggerAttackRelease(["C4", "E4", "G4"], 0.2);
+                } else if (soundName === 'wrong') {
+                    synths.wrong.triggerAttackRelease("E3", "0.25");
+                } else if (soundName === 'start') {
+                    synths.start.triggerAttackRelease("C4", 0.5);
+                } else if (soundName === 'info') {
+                    synths.info.triggerAttackRelease("G4", 0.5);
+                } else if (soundName === 'click' || soundName === 'force-click') {
+                    synths.click.triggerAttackRelease("C2", "8n");
+                }
+            } catch (e) {
+                console.error("Audio playback error:", e);
+            }
         }
 
-        const API_PROVIDERS = [
-            { type: 'deepseek', key: "sk-3ac8d0208edd4ada9e949eb366a4a262", url: "https://api.deepseek.com/chat/completions", model: "deepseek-chat" },
-            { type: 'gemini', key: "AIzaSyDdAtMBXcRXJL49QhAsJWPquDZXxi0KOHc", url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent", model: null },
-            { type: 'gemini', key: "AIzaSyAy71JTyML7ZIAMKiWetoRxQepoHrsUQfA", url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent", model: null }
+        // دالة التطبيع الذكي
+        function normalizeArabic(str) {
+            if (!str) return "";
+            return str.trim()
+                .replace(/[\u064B-\u0652]/g, '') // إزالة التشكيل (الحركات)
+                .replace(/[أإآ]/g, 'ا')         // توحيد الهمزات على الألف
+                .replace(/ى/g, 'ي')             // توحيد الألف المقصورة
+                .replace(/ة/g, 'ه');            // توحيد التاء المربوطة
+        }
+
+        // 2. قاعدة المعرفة الموسعة (*** تم تصحيح الأخطاء هنا ***)
+        const knowledgeBase = [
+            // --- القسم الأول: الألغاز المُلفّقة (20) ---
+            { type: "ملفق", difficulty: "سهل", question_text: "سائل للكتابة، إذا لفّقت حروفه صار: ماءً عظيماً.", answer: ["بحر", "حبر"] },
+            { type: "ملفق", difficulty: "سهل", question_text: "حيوان للركوب، إذا لفّقت حروفه صار: ارتحالاً.", answer: ["سفر", "فرس"] },
+            { type: "ملفق", difficulty: "سهل", question_text: "عضو ينبض، إذا لفّقت حروفه صار: اسم العائلة.", answer: ["لقب", "قلب"] },
+            { type: "ملفق", difficulty: "سهل", question_text: "طعام مالح، إذا لفّقت حروفه صار: ما يراه النائم.", answer: ["حلم", "ملح"] },
+            { type: "ملفق", difficulty: "سهل", question_text: "رجاء للمستقبل، إذا لفّقت حروفه صار: وجعاً.", answer: ["أمل", "ألم"] },
+            { type: "ملفق", difficulty: "سهل", question_text: "ثمر النخيل، إذا لفّقت حروفه صار: أداة للربط.", answer: ["حبل", "بلح"] },
+            { type: "ملفق", difficulty: "سهل", question_text: "كلام مقفى، إذا لفّقت حروفه صار: مقعد الملك.", answer: ["عرش", "شعر"] },
+            // 7 متوسط
+            { type: "ملفق", difficulty: "متوسط", question_text: "كوكب ليلي، إذا لفّقت حروفه صار: عدداً حسابياً.", answer: ["رقم", "قمر"] },
+            { type: "ملفق", difficulty: "متوسط", question_text: "سلاح قديم، إذا لفّقت حروفه صار: مكاناً مقدساً.", answer: ["حرم", "رمح"] },
+            { type: "ملفق", difficulty: "متوسط", question_text: "طعام يومي، إذا لفّقت حروفه صار: صغير الشاة.", answer: ["حمل", "لحم"] },
+            { type: "ملفق", difficulty: "متوسط", question_text: "حيوان صبور، إذا لفّقت حروفه صار: ممنوعاً.", answer: ["حرام", "حمار"] },
+            { type: "ملفق", difficulty: "متوسط", question_text: "أداة رمي، إذا لفّقت حروفه صار: صوتاً خافتاً.", answer: ["همس", "سهم"] },
+            { type: "ملفق", difficulty: "متوسط", question_text: "ذكر الضأن، إذا لفّقت حروفه صار: أداة للصيد.", answer: ["شبك", "كبش"] },
+            { type: "ملفق", difficulty: "متوسط", question_text: "فاكهة، إذا لفّقت حروفه صار: عين الماء.", answer: ["نبع", "عنب"] },
+            // 6 صعب
+            { type: "ملفق", difficulty: "صعب", question_text: "طيب وعطر، إذا لفّقت حروفه صار: حيواناً بحرياً.", answer: ["سمك", "مسك"] },
+            { type: "ملفق", difficulty: "صعب", question_text: "شريك الحياة، إذا لفّقت حروفه صار: مكسرات.", answer: ["جوز", "زوج"] },
+            { type: "ملفق", difficulty: "صعب", question_text: "فصل الجمال، إذا لفّقت حروفه صار: شذىً وعطراً.", answer: ["عبير", "ربيع"] },
+            { type: "ملفق", difficulty: "صعب", question_text: "حيوانات، إذا لفّقت حروفه صار: دنوّاً.", answer: ["قرب", "بقر"] },
+            { type: "ملفق", difficulty: "صعب", question_text: "عضو البصر، إذا لفّقت حروفه صار: إخباراً بالموت.", answer: ["نعي", "عين"] },
+            // { type: "ملفق", difficulty: "صعب", question_text: "شهر الصوم، إذا لفّقت حروفه صار: مرضاً بالعين.", answer: ["رمضان", "رمد"] }, // <-- هذا اللغز خاطئ (الحروف غير متطابقة)، تم استبداله
+            { type: "ملفق", difficulty: "صعب", question_text: "دولة عربية، إذا لفّقت حروفه صار: عكس 'حلو'.", answer: ["مصر", "مر"] }, // <-- لغز بديل وصحيح
+
+            // --- القسم الثاني: الأحاجي (20) ---
+            // { type: "أحجية", difficulty: "سهل", question_text: "ما اسم عملة، شطرها الأول (ملة ومعتقد)، وشطره الثاني (لهب حارق)؟", answer: ["دينار"] }, // <-- الشطر الثاني "ار" وليس "نار"
+            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم عملة، شطرها الأول (ملة ومعتقد)، وشطره الثاني (فعل أمر بالرؤية)؟", answer: ["دينار"] }, // <-- تصحيح لغز دينار
+            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم طائر، شطره الأول (فعل أمر بالخداع)، وشطره الثاني (والد)؟", answer: ["غراب"] },
+            // { type: "أحجية", difficulty: "سهل", question_text: "ما اسم زهرة، شطرها الأول (قنوط)، وشطره الثاني (حرف جر)؟", answer: ["ياسمين"] }, // <-- "مين" ليست حرف جر
+            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم زهرة، شطرها الأول (قنوط)، وشطره الثاني (من؟ بالعامية)؟", answer: ["ياسمين"] }, // <-- تصحيح لغز ياسمين
+            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم لقب، شطره الأول (هرب)، وشطره الثاني (مساعدة)؟", answer: ["فرعون"] },
+            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم فاكهة، شطرها الأول (ارتحال)، وشطره الثاني (عَظُمَ قدره)؟", answer: ["سفرجل"] },
+            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم شيء بالبيت، شطره الأول (عكس خير)، وشطره الثاني (مضى)؟", answer: ["شرفات"] },
+            // { type: "أحجية", difficulty: "سهل", question_text: "ما اسم بلدة، شطرها الأول (نقود تافهة)، وشطره الثاني (فاكهة قرآنية)؟", answer: ["فلسطين"] }, // <-- خطأ "طين" ليست فاكهة "تين"
+            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم بلدة، شطرها الأول (نقود تافهة)، وشطره الثاني (مادة الخلق)؟", answer: ["فلسطين"] }, // <-- تصحيح لغز فلسطين (ملاحظة المستخدم)
+            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم وسيلة تواصل، شطرها الأول (اليابسة)، وشطره الثاني (عضو بالجسم)؟", answer: ["بريد"] },
+            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم سائل سماوي، شطره الأول (قاتل)، وشطره الثاني (سائل الحياة)؟", answer: ["سماء"] },
+            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم حجر كريم، شطره الأول (فعل أمر بالشد)، وشطره الثاني (جواب)؟", answer: ["زمرد"] },
+            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم طائر، شطره الأول (أمر بالمعصية)، وشطره الثاني (حالاً)؟", answer: ["عصفور"] },
+            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم نبات، شطره الأول (استقر)، وشطره الثاني (نافلة)؟", answer: ["قرنفل"] },
+            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم عين بالجنة، شطرها الأول (فعل أمر بالسؤال)، وشطره الثاني (طريق)؟", answer: ["سلسبيل"] },
+            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم مكان، شطره الأول (أخ بالعامية)، وشطره الثاني (يابسة)؟", answer: ["خيبر"] },
+            { type: "أحجية", difficulty: "صعب", question_text: "ما اسم شعور، شطره الأول (شيء يكتم)، وشطره الثاني (خلف)؟", answer: ["سرور"] }, // (سر + ور[اء])
+            // { type: "أحجية", difficulty: "صعب", question_text: "ما اسم فاكهة، شطرها الأول (لمس)، وشطره الثاني (لمس)؟", answer: ["مشمش"] }, // <-- "مش" ليست "لمس"
+            { type: "أحجية", difficulty: "صعب", question_text: "ما اسم فاكهة، شطرها الأول (فعل أمر بالمشي)، وشطره الثاني (فعل أمر بالمشي)؟", answer: ["مشمش"] }, // <-- تصحيح لغز مشمش
+            { type: "أحجية", difficulty: "صعب", question_text: "ما اسم سلطان، شطره الأول (استل)، وشطره الثاني (صوت الرنين)؟", answer: ["سلطان"] },
+            { type: "أحجية", difficulty: "صعب", question_text: "ما اسم شيء لابد منه، شطره الأول (أداة نفي)، وشطره الثاني (مفر)؟", answer: ["لابد"] },
+            // { type: "أحجية", difficulty: "صعب", question_text: "ما اسم فاكهة، شطرها الأول (عباءة)، وشطره الثاني (تحدث)؟", answer: ["برتقال"] }, // <-- "بر" ليست "عباءة"
+            { type: "أحجية", difficulty: "صعب", question_text: "ما اسم فاكهة، شطرها الأول (يابسة)، وشطره الثاني (يُقال)؟", answer: ["برتقال"] }, // <-- تصحيح لغز برتقال
+            { type: "أحجية", difficulty: "صعب", question_text: "ما اسم حبوب، شطره الأول (سم)، وشطره الثاني (سم)؟", answer: ["سمسم"] },
+
+            // --- القسم الثالث: اللغز - بالمعنى الأخص (20) ---
+            { type: "لغز", difficulty: "سهل", question_text: "أداة للكتابة (3 حروف، جماد، لا يوجد ألف).", answer: ["قلم"] },
+            { type: "لغز", difficulty: "سهل", question_text: "وعاء للمعرفة (4 حروف، جماد، يوجد ألف).", answer: ["كتاب"] },
+            { type: "لغز", difficulty: "سهل", question_text: "نجم نهاري (3 حروف، كوكب، لا يوجد ألف).", answer: ["شمس"] },
+            { type: "لغز", difficulty: "سهل", question_text: "رمز بداية الشهر (4 حروف، فلك، يوجد ألف).", answer: ["هلال"] },
+            { type: "لغز", difficulty: "سهل", question_text: "سفينة الصحراء (3 حروف، حيوان، لا يوجد ألف).", answer: ["جمل"] },
+            { type: "لغز", difficulty: "سهل", question_text: "سائل الحياة الأحمر (حرفان، جزء حيوي، لا يوجد ألف).", answer: ["دم"] },
+            { type: "لغز", difficulty: "سهل", question_text: "فاكهة للكرمة (3 حروف، نبات، لا يوجد ألف).", answer: ["عنب"] },
+            { type: "لغز", difficulty: "متوسط", question_text: "سلاح قديم (3 حروف، جماد، لا يوجد ألف).", answer: ["سيف"] },
+            { type: "لغز", difficulty: "متوسط", question_text: "سر الحياة (3 حروف، سائل، يوجد ألف).", answer: ["ماء"] },
+            { type: "لغز", difficulty: "متوسط", question_text: "معدن أصفر (3 حروف، معدن، لا يوجد ألف).", answer: ["ذهب"] },
+            { type: "لغز", difficulty: "متوسط", question_text: "زمن السكون (3 حروف، وقت، لا يوجد ألف).", answer: ["ليل"] },
+            { type: "لغز", difficulty: "متوسط", question_text: "مدخل الدار (3 حروف، جماد، يوجد ألف).", answer: ["باب"] },
+            { type: "لغز", difficulty: "متوسط", question_text: "وتد الأرض (3 حروف، جماد، لا يوجد ألف).", answer: ["جبل"] },
+            { type: "لغز", difficulty: "متوسط", question_text: "الامتناع عن الأكل (3 حروف، عبادة، لا يوجد ألف).", answer: ["صوم"] },
+            { type: "لغز", difficulty: "صعب", question_text: "حيوان سريع (3 حروف، حيوان، لا يوجد ألف).", answer: ["فهد"] },
+            { type: "لغز", difficulty: "صعب", question_text: "آلة النظر (3 حروف، عضو، لا يوجد ألف).", answer: ["عين"] },
+            { type: "لغز", difficulty: "صعب", question_text: "عنصر الإحراق (3 حروف، عنصر، يوجد ألف).", answer: ["نار"] },
+            { type: "لغز", difficulty: "صعب", question_text: "جهاز التواصل (4 حروف، آلة، يوجد ألف).", answer: ["هاتف"] },
+            { type: "لغز", difficulty: "صعب", question_text: "طائر جارح (3 حروف، طائر، لا يوجد ألف).", answer: ["صقر"] },
+            { type: "لغز", difficulty: "صعب", question_text: "عماد الدين (4 حروف، عبادة، يوجد ألف).", answer: ["صلاة"] },
+            
+            // --- القسم الرابع: المعمّى ---
+            { type: "معمّى", difficulty: "صعب", answer: ["حسن"], question_text: "المرحلة 1 (لغز): جماد من 3 حروف لا ألف فيه (يدل على الجمال). المرحلة 2: أضف له 'ال' فصار اسم علم." },
+            { type: "معمّى", difficulty: "صعب", answer: ["ملح"], question_text: "المرحلة 1 (ملفق): تبديل حروف 'حمل'. المرحلة 2: الناتج هو اسم لشيء يؤكل." },
+            { type: "معمّى", difficulty: "صعب", answer: ["سمسم"], question_text: "المرحلة 1 (أحجية): مادة تؤكل من مقطعين ('سم' + 'سم'). المرحلة 2: هو اسم لباب في قصة خيالية." }
         ];
-        
-        let currentProviderIndex = 0;
 
-        async function callAI(data) {
-            const maxRetries = API_PROVIDERS.length * 2; 
-            for (let i = 0; i < maxRetries; i++) {
-                const provider = API_PROVIDERS[currentProviderIndex];
-                try {
-                    let response, resultText;
-                    if (provider.type === 'deepseek') {
-                        response = await fetch(provider.url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${provider.key}` },
-                            body: JSON.stringify({
-                                model: provider.model,
-                                messages: [{ role: "system", content: data.system }, { role: "user", content: data.user }],
-                                response_format: { type: "json_object" },
-                                temperature: 0.8
-                            })
-                        });
-                    } else {
-                        response = await fetch(`${provider.url}?key=${provider.key}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                contents: [{ parts: [{ text: data.user }] }],
-                                systemInstruction: { parts: [{ text: data.system }] },
-                                generationConfig: { responseMimeType: "application/json", responseSchema: data.schema }
-                            })
-                        });
-                    }
-                    if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
-                    const json = await response.json();
-                    if (provider.type === 'deepseek') resultText = json.choices?.[0]?.message?.content;
-                    else resultText = json.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (!resultText) throw new Error("Empty Response");
-                    return resultText;
-                } catch (err) {
-                    currentProviderIndex = (currentProviderIndex + 1) % API_PROVIDERS.length;
-                    if (i < maxRetries - 1) await new Promise(res => setTimeout(res, 1000));
-                }
+
+        // 3. مولّد الألغاز المباشر
+        function generatePuzzle(entry) {
+            let puzzle = {
+                question: "",
+                answer: entry.answer, // هذه الآن مصفوفة
+                rule: ""
+            };
+            
+            switch (entry.type) {
+                case "ملفق":
+                    puzzle.question = `(ملفق): ${entry.question_text}`;
+                    puzzle.rule = "الفصل الثاني: اللغز الملفق";
+                    break;
+                case "أحجية":
+                    puzzle.question = `(أحجية): ${entry.question_text}`;
+                    puzzle.rule = "الفصل الثالث: الأحجية";
+                    break;
+                case "لغز":
+                    puzzle.question = `(لغز): ${entry.question_text}`;
+                    puzzle.rule = "الفصل الرابع: اللغز (بالمعنى الأخص)";
+                    break;
+                case "معمّى":
+                    puzzle.question = `(معمّى): ${entry.question_text}`;
+                    puzzle.rule = "الفصل الخامس: المعمّى (مرحلتان)";
+                    break;
             }
-            throw new Error("نعتذر، جميع العقول الإلكترونية مشغولة حالياً.");
+            return puzzle;
         }
 
-        // --- النص الكامل للقواعد كما ورد في المصدر ---
-        const FULL_RULES_TEXT = `
-        <div class="space-y-6">
-            <p class="font-bold text-lg text-red-300 bg-red-900/30 border border-red-500/50 p-4 rounded-xl text-center shadow-inner mb-6">⚠️ ملاحظة هامة: التطبيق يستخدم هذه القواعد حصراً لإنشاء الألغاز.</p>
-            
-            <h4 class="font-bold text-yellow-500 text-xl text-center mb-6 underline decoration-yellow-500/30 underline-offset-8">(نظام الألغاز والأحاجي)</h4>
-            
-            <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700/50">
-                <h4 class="font-bold text-yellow-400 text-lg mb-3 border-b border-yellow-500/20 pb-2">الفصل الأول: قواعد عامة:</h4>
-                <div class="space-y-3 text-gray-300 leading-loose">
-                    <p><strong>المادة الأولى:</strong> يُلغز بالاسم فقط دون الفعل أو اسم الفعل أو الفاعل أو المفعول أو صيغ المبالغة والتعجب والتفضيل أو أسماء الزمان أو المكان وما أشبه ذلك مما لا يدلّ على معنى معين قائم بذاته.</p>
-                    <p><strong>المادة الثانية:</strong> الاسم الذي يُلغز به يعمّ العلم الشخصي أو أسماء الجماد أو النبات أو الحيوان أو الصفات أو غيرها.</p>
-                    <p><strong>المادة الثالثة:</strong> يجب أن لا يكون الاسم الملغز فيه:</p>
-                    <ul class="list-disc list-inside pr-4 space-y-1 text-gray-400">
-                        <li>١- من لغة أجنبية كلُّه أو جزؤه.</li>
-                        <li>٢- ألا يكون مركباً من ضمير أو الألف واللام أو ياء النسبة أو غيرها.</li>
-                    </ul>
-                    <p><strong>المادة الرابعة:</strong> يجب أن يحرز الملغز أن اللغز واضح ومعلوم لدى أكثر المتلقي إليهم.</p>
-                    <p><strong>المادة الخامسة:</strong> العبارة التي يعبّر بها عن اللغز يجوز أن تكون كلمة أو جملة أو بعض جملة أو مضافة إلى ضمير وغير ذلك.</p>
-                    <p><strong>المادة السادسة:</strong> أي اسم جاء حلاً موافقاً للشروط التي اعتبرت في اللغز فهو مقبول وإن لم يكن نفس الاسم المنوي.</p>
-                    <p><strong>المادة السابعة:</strong> إذا جاء الحل بما يخالف المادة الأولى أو الثالثة يرفض.</p>
-                </div>
-            </div>
-
-            <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700/50">
-                <h4 class="font-bold text-yellow-400 text-lg mb-3 border-b border-yellow-500/20 pb-2">الفصل الثاني: الملفق</h4>
-                <div class="space-y-3 text-gray-300 leading-loose">
-                    <p><strong>المادة الثامنة:</strong> كيفية اللغز الملفّق: هو تبديل مكان الحروف بحيث تنتج منه كلمة أو عدة كلمات ذات معنى.</p>
-                    <p><strong>المادة التاسعة:</strong> يجوز أن يكون اللغز أكثر من كلمة واحدة.</p>
-                    <p><strong>المادة العاشرة:</strong> يجب أن تكون الكلمة أو الكلمات التي يُعبّر بها عن اللغز ذات معنى مفهوم لغةً.</p>
-                    <p><strong>المادة الحادية عشرة:</strong> ليست الحركات محل اعتبار في اللغز الملفّق.</p>
-                    <p><strong>المادة الثانية عشرة:</strong> يجب ألا يكون في صيغة اللغز حروف زائدة أو ناقصة فتحدث التشويش والإرباك.</p>
-                </div>
-            </div>
-
-            <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700/50">
-                <h4 class="font-bold text-yellow-400 text-lg mb-3 border-b border-yellow-500/20 pb-2">الفصل الثالث: الأحجية:</h4>
-                <div class="space-y-3 text-gray-300 leading-loose">
-                    <p><strong>المادة الثالثة عشرة:</strong> الأحجية هي: تقطيع الكلمة إلى مقطع أو أكثر بحيث ينتج من كل مقطع معنى ثم يبدّل كل مقطع بما يرادفه.</p>
-                    <p><strong>المادة الرابعة عشرة:</strong> يجب أن يكون بين المقطعين علاقة خاصة اما الإضافة أو الوصفية أو الخبرية وما أشبه.</p>
-                    <p><strong>المادة الخامسة عشرة:</strong> يجب ألا يحصل تكرار في الحروف في ضمن تقطيع الإسم إلى مقطعين أو أكثر.</p>
-                    <p><strong>المادة السادسة عشرة:</strong> يجوز أن يعرّف المقطع الواحد بكلمة واحدة أو عدة كلمات.</p>
-                    <p><strong>المادة السابعة عشرة:</strong> يجب أن تكون الكلمة أو الكلمات التي يعرّف بواسطتها اللغز لا غامضة بحيث يعثر فهمها ولا واضحة بحيث يسهل حلها.</p>
-                </div>
-            </div>
-
-            <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700/50">
-                <h4 class="font-bold text-yellow-400 text-lg mb-3 border-b border-yellow-500/20 pb-2">الفصل الرابع: اللغز</h4>
-                <div class="space-y-3 text-gray-300 leading-loose">
-                    <p><strong>المادة الثامنة عشرة:</strong> لا إسم لهذا اللغز فلذا اعتبرناه (لغزاً) بالمعنى الأخص.</p>
-                    <p><strong>المادة التاسعة عشرة:</strong> كيفية اللغز بالمعنى الأخص: هي جمع حرفين فأكثر، سواء كانا متلاصقين في أصل الكلمة أو منفصلين أم متقدمين أو متأخرين، بحيث يحصل بجمعها معنى معين، ثم يأتي الملغز بكلمة ترادفه أو تدلّ عليه.</p>
-                    <p><strong>المادة العشرون:</strong> يجب تعيين ما يلي في كل اسم ملغز:</p>
-                    <ul class="list-disc list-inside pr-4 space-y-1 text-gray-400">
-                        <li>١- عدد حروفه.</li>
-                        <li>٢- أنه إسم لأي صنف من الأشياء.</li>
-                        <li>٣- أنه هل يحتوي أو لا يحتوي على الألف بحساب (أبجد).</li>
-                    </ul>
-                    <p><strong>المادة الحادية والعشرون:</strong> يجب استيفاء جميع حروف الاسم على التبادل بينها.</p>
-                    <p><strong>المادة الثانية والعشرون:</strong> يجوز أن تكرر حروف الإسم في أي مقطع من المقاطع، ولا يجوز تكرار الحرف الواحد في المقطع الواحد أكثر من مرة واحدة.</p>
-                    <p><strong>المادة الثالثة والعشرون:</strong> يجب تعيين المكان العددي للحرف من بين مجموع الحروف.</p>
-                    <p><strong>المادة الرابعة والعشرون:</strong> يشترك كلٌّ من الأحجية واللغز بالمعنى الأخص بأنَّ العبارة التي يعرّف بها الإسم أو جزؤه يجب أن تكون مفهومة لغةً وعرفاً.</p>
-                </div>
-            </div>
-
-            <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700/50">
-                <h4 class="font-bold text-yellow-400 text-lg mb-3 border-b border-yellow-500/20 pb-2">الفصل الخامس: المعمّى</h4>
-                <div class="space-y-3 text-gray-300 leading-loose">
-                    <p><strong>المادة الخامسة والعشرون:</strong> المعمّى: هو اللغز الذي استعملت فيه مرحلتين أو أكثر في طريق حلّه.</p>
-                    <p><strong>المادة السادسة والعشرون:</strong> لا يجب أن تكون عبارة المعمّى واضحة، بل فقط يجب كونها ذات مدلول لغوي تام.</p>
-                    <p><strong>المادة السابعة والعشرون:</strong> يجوز أن يكون كل من المرحلتين أو الأكثر لغزاً مما سبق في الفصول الثلاثة السابقة، أو يكون شيئاً آخر كحساب أبجد -مثلاً-.</p>
-                </div>
-            </div>
-
-            <div class="bg-gray-800/50 p-4 rounded-xl border border-gray-700/50">
-                <h4 class="font-bold text-yellow-400 text-lg mb-3 border-b border-yellow-500/20 pb-2">الفصل السادس: تتمة</h4>
-                <div class="space-y-3 text-gray-300 leading-loose">
-                    <p><strong>المادة الثامنة والعشرون:</strong> كلّ ما لم يُذكر في هذا النظام فهو جائز.</p>
-                    <p><strong>المادة التاسعة والعشرون:</strong> هذا النظام مختص بلغة اللغز العربية.</p>
-                    <p><strong>المادة الثلاثون:</strong> يجب على كل فرد عند استعمال الألغاز أن يتبع هذا النظام بمجرد علمه به، حالاً.</p>
-                </div>
-            </div>
-        </div>
-        `;
-
-        // --- تحديث أوامر النظام لتكون نسخة طبق الأصل من القواعد ---
-        const SYSTEM_PROMPT = `
-أنت محرك ذكي يتقمص "نظام الألغاز والأحاجي" للسيد محمد الصدر. مهمتك توليد ألغاز تلتزم حرفياً بالقواعد التالية، وأي خروج عنها يعتبر فشلاً ذريعاً.
-
-القواعد العامة الصارمة (تطبق على الجميع):
-1. اللغز يكون في (الأسماء فقط): (اسم علم، جماد، حيوان، نبات، صفة). يمنع منعاً باتاً استخدام الأفعال أو الحروف.
-2. الاسم يجب أن يكون عربياً فصحياً.
-3. لا يجوز أن يكون الاسم مركباً من ضمير أو (ال) التعريف.
-
-تعليمات خاصة لكل مستوى (يجب اختيار نوع واحد حسب الطلب):
-
-المستوى 1 (الملفّق - المادة 8):
-- الخوارزمية: اختر كلمة (الإجابة). قم بتبديل أماكن حروفها لتنتج كلمة جديدة لها معنى (اللغز).
-- مثال: الإجابة "بحر". اللغز "حبر". (لأن حبر ناتجة من تبديل حروف بحر).
-- صيغة اللغز المقدم للمستخدم: قدم الكلمة الناتجة (المقلوبة) واسأله عن الأصل، أو قل "كلمة إذا قلبت حروفها صارت [الكلمة المقلوبة]".
-
-المستوى 2 (الأحجية - المادة 13):
-- الخوارزمية: اختر كلمة (الإجابة). قطعها إلى مقطعين أو أكثر. كل مقطع يجب أن يكون له معنى مستقل.
-- صف كل مقطع بكلمة ترادفه.
-- مثال: كلمة "برداد". تقطع إلى "بر" (بمعنى اليابسة) و "داد" (بمعنى اللهو). اللغز يكون وصفاً لليابسة واللهو يجمعهما اسم واحد.
-
-المستوى 3 (المعمّى - المادة 25):
-- الخوارزمية: لغز مركب من مرحلتين أو أكثر، أو استخدام حساب الجمل (أبجد هوز).
-- يجب أن يكون اللغز غامضاً وذكياً جداً ويتطلب تفكيكاً.
-
-المخرجات المطلوبة (JSON حصراً):
-{
-  "riddle": "نص اللغز هنا...",
-  "answer": "الإجابة الدقيقة (كلمة واحدة غالباً)"
-}
-`;
-
-        let currentUserId = null;
-        let currentUserName = null;
+        // 4. إدارة حالة اللعبة والنقاط
+        let currentGameSettings = { difficulty: null, type: null };
+        let currentPuzzleList = [];
+        let currentPuzzle = null;
         let currentScore = 0;
-        let currentLevel = 1;
-        let currentRiddle = null;
-        let currentAnswer = null;
+        let lastGameScore = 0; // (جديد) لتتبع آخر نتيجة
+        let highScore = 0;
+        let currentStreak = 0;
+        const CORRECT_DELAY = 1500;
+        const SHOW_ANSWER_DELAY = 2000;
 
-        function renderState(state, data = {}) {
-            const toHide = ['auth-loader', 'loader', 'error-message', 'riddle-container', 'feedback-container', 'initial-message'];
-            toHide.forEach(id => document.getElementById(id).hidden = true);
-            document.getElementById('submit-btn').disabled = true;
+        // 5. جلب عناصر الواجهة
+        const loadingScreenEl = document.getElementById('loading-screen');
+        const puzzleRuleEl = document.getElementById('puzzle-rule');
+        const puzzleQuestionEl = document.getElementById('puzzle-question');
+        const puzzleScreenContentEl = document.getElementById('puzzle-screen-content');
+        const answerInputEl = document.getElementById('answer-input');
+        const checkButtonEl = document.getElementById('check-button');
+        const startButtonEl = document.getElementById('start-button');
+        const feedbackMessageEl = document.getElementById('feedback-message');
+        const puzzleContainerEl = document.getElementById('puzzle-container');
+        const selectionContainerEl = document.getElementById('selection-container');
+        const showAnswerButtonEl = document.getElementById('show-answer-button');
+        const backToSettingsButtonEl = document.getElementById('back-to-settings-button');
+        const howToPlayButtonEl = document.getElementById('how-to-play-button');
+        const modalEl = document.getElementById('how-to-play-modal');
+        const closeModalButtonEl = document.getElementById('close-modal-button');
+        const scoreEl = document.querySelector('#stat-score strong');
+        const highScoreEl = document.querySelector('#stat-highscore strong');
+        const streakEl = document.querySelector('#stat-streak strong');
+        const muteButtonEl = document.getElementById('mute-button');
+        const muteTooltipEl = document.getElementById('mute-tooltip');
+        const muteIconOn = document.querySelector('#mute-button .icon-on');
+        const muteIconOff = document.querySelector('#mute-button .icon-off');
+        const resetHighScoreButtonEl = document.getElementById('reset-highscore-button');
+        const lastScoreContainerEl = document.getElementById('last-score-container');
+        const lastScoreTextEl = document.getElementById('last-score-text');
+        const shareButtonEl = document.getElementById('share-button');
+        const shareFeedbackEl = document.getElementById('share-feedback');
 
-            const show = (id) => document.getElementById(id).hidden = false;
-
-            if (state === 'auth') { show('auth-loader'); document.getElementById('user-info').hidden = true; document.getElementById('level-controls').hidden = true; }
-            else if (state === 'loading') show('loader');
-            else if (state === 'error') { 
-                show('error-message'); 
-                document.getElementById('error-text').textContent = data.message; 
-                if (data.techDetails) {
-                    const td = document.getElementById('tech-details');
-                    td.textContent = data.techDetails;
-                    td.hidden = false;
-                }
-            }
-            else if (state === 'riddle') { 
-                show('riddle-container'); 
-                document.getElementById('riddle-text').textContent = data.riddle; 
-                document.getElementById('submit-btn').disabled = false; 
-                document.getElementById('user-input').value = ""; 
-                document.getElementById('user-input').focus();
-            }
-            else if (state === 'feedback') {
-                show('feedback-container');
-                const fbEl = document.getElementById('feedback-text');
-                fbEl.textContent = data.feedback || data.message;
-                fbEl.className = `text-xl font-bold leading-loose whitespace-pre-wrap ${data.isCorrect ? 'text-green-400' : 'text-red-400'}`;
-            }
-            else if (state === 'initial') {
-                document.getElementById('user-info').hidden = false;
-                document.getElementById('level-controls').hidden = false;
-                show('initial-message');
-                document.getElementById('player-name-display').textContent = currentUserName ? `اللاعب: ${currentUserName}` : '';
-                
-                const offlineIndicator = document.getElementById('offline-indicator');
-                const leaderboardList = document.getElementById('leaderboard-list');
-                const accountBtn = document.getElementById('account-btn');
-                
-                if (isOffline) {
-                    offlineIndicator.hidden = false;
-                    leaderboardList.innerHTML = '<li class="text-red-400 text-center">غير متصل - اللوحة معطلة</li>';
-                    accountBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                    accountBtn.onclick = (e) => { e.preventDefault(); alert("يجب الاتصال بالإنترنت لاستخدام ميزات الحساب."); };
-                } else {
-                    offlineIndicator.hidden = true;
-                    accountBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    accountBtn.onclick = () => { document.getElementById('account-modal').hidden = false; };
-                }
+        // 6. دوال اللعبة الأساسية
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
             }
         }
 
-        function getPath(collectionName, docId = null) {
-            // استخدام معرف التطبيق الصحيح (Dynamic ID)
-            const base = `artifacts/${envAppId}/public/data/${collectionName}`;
-            return docId ? `${base}/${docId}` : base;
+        function updateScoreboard() {
+            scoreEl.textContent = currentScore;
+            highScoreEl.textContent = highScore;
+            streakEl.textContent = currentStreak;
         }
 
-        function getUserPath(docId = null) {
-             const base = `artifacts/${envAppId}/users/${currentUserId}/game_data`;
-             return docId ? `${base}/${docId}` : base;
+        function startGame() {
+            playSound('start');
+            currentGameSettings.difficulty = document.querySelector('input[name="difficulty"]:checked').value;
+            // (تعديل) تم إلغاء اختيار النوع، سيتم اختيار "الكل" افتراضياً
+            currentGameSettings.type = "الكل"; 
+
+            let filteredBank = knowledgeBase;
+            
+            // (تعديل) ترشيح حسب المستوى فقط
+            if (currentGameSettings.difficulty !== 'الكل') {
+                 filteredBank = knowledgeBase.filter(p => p.difficulty === currentGameSettings.difficulty);
+            }
+            // (تعديل) إذا اختار المستخدم "الكل" للمستوى، نبدأ بـ "سهل"
+            else if (currentGameSettings.difficulty === 'الكل') {
+                filteredBank = knowledgeBase.filter(p => p.difficulty === 'سهل');
+            }
+            
+            currentPuzzleList = [...filteredBank];
+            shuffleArray(currentPuzzleList);
+
+            currentScore = 0;
+            currentStreak = 0;
+            updateScoreboard();
+
+            selectionContainerEl.classList.add('hidden');
+            lastScoreContainerEl.classList.add('hidden'); // إخفاء نتيجة الجولة السابقة
+            puzzleContainerEl.classList.remove('hidden');
+
+            loadNextPuzzle();
         }
 
-        async function registerAccount(phone, password) {
-            if (isOffline) { alert("عذراً، أنت في وضع عدم الاتصال."); return; }
-            if (!db || !currentUserId) return;
-            const msgEl = document.getElementById('reg-msg');
-            msgEl.textContent = "جاري الحفظ..."; msgEl.className = "text-center mt-4 text-sm font-bold text-yellow-400 animate-pulse";
-            const docRef = doc(db, getPath('accounts', phone));
-            try {
-                const existingDoc = await getDoc(docRef);
-                if (existingDoc.exists()) {
-                    msgEl.textContent = "رقم الهاتف مسجل مسبقاً.";
-                    msgEl.className = "text-center mt-4 text-sm font-bold text-red-400";
-                    return;
-                }
-                const accountData = { phone, password, originalUid: currentUserId, name: currentUserName, score: currentScore, createdAt: new Date().toISOString() };
-                await setDoc(docRef, accountData);
-                msgEl.textContent = "تم حفظ الحساب بنجاح!";
-                msgEl.className = "text-center mt-4 text-sm font-bold text-green-400";
-                setTimeout(() => { document.getElementById('account-modal').hidden = true; }, 2000);
-            } catch (e) { console.error(e); msgEl.textContent = "خطأ في الحفظ."; msgEl.className = "text-center mt-4 text-sm font-bold text-red-400"; }
-        }
-
-        async function loginAccount(phone, password) {
-            if (isOffline) { alert("عذراً، أنت في وضع عدم الاتصال."); return; }
-            const msgEl = document.getElementById('login-msg');
-            msgEl.textContent = "جاري البحث..."; msgEl.className = "text-center mt-4 text-sm font-bold text-yellow-400 animate-pulse";
-            const docRef = doc(db, getPath('accounts', phone));
-            try {
-                const accDoc = await getDoc(docRef);
-                if (!accDoc.exists()) {
-                    msgEl.textContent = "الرقم غير موجود.";
-                    msgEl.className = "text-center mt-4 text-sm font-bold text-red-400";
-                    return;
-                }
-                const data = accDoc.data();
-                if (data.password !== password) {
-                    msgEl.textContent = "كلمة المرور خطأ.";
-                    msgEl.className = "text-center mt-4 text-sm font-bold text-red-400";
-                    return;
-                }
-                currentUserName = data.name;
-                currentScore = Math.max(currentScore, data.score || 0);
-                document.getElementById('score-display').textContent = `النتيجة: ${currentScore} نقطة`;
-                document.getElementById('player-name-display').textContent = `اللاعب: ${currentUserName}`;
-                await updateLeaderboardAndScore();
-                msgEl.textContent = `أهلاً ${currentUserName}!`;
-                msgEl.className = "text-center mt-4 text-sm font-bold text-green-400";
-                document.getElementById('name-modal').hidden = true;
-                setTimeout(() => { document.getElementById('account-modal').hidden = true; }, 2000);
-            } catch (e) { console.error(e); msgEl.textContent = "خطأ في الاسترجاع."; }
-        }
-
-        async function updateLeaderboardAndScore() {
-            if (isOffline) {
-                localStorage.setItem('localScore', currentScore);
-                localStorage.setItem('localName', currentUserName);
+        function loadNextPuzzle() {
+            resetUI();
+            if (currentPuzzleList.length === 0) {
+                puzzleQuestionEl.textContent = 'رائع! لقد أكملت جميع الألغاز في هذه الفئة.';
+                answerInputEl.disabled = true;
+                checkButtonEl.disabled = true;
+                showAnswerButtonEl.disabled = true;
+                puzzleScreenContentEl.classList.add('fade-in');
                 return;
             }
-            if (!currentUserId) return;
-            const leaderboardDoc = doc(db, getPath('leaderboard', currentUserId));
-            try { await setDoc(leaderboardDoc, { score: currentScore, name: currentUserName }, { merge: true }); } catch(e) { console.error(e); }
+
+            const nextEntry = currentPuzzleList.pop();
+            currentPuzzle = generatePuzzle(nextEntry);
+
+            puzzleQuestionEl.textContent = currentPuzzle.question;
+            puzzleScreenContentEl.classList.remove('fade-in');
+            void puzzleScreenContentEl.offsetWidth;
+            puzzleScreenContentEl.classList.add('fade-in');
         }
 
-        async function loadPlayerData(uid) {
-            if (isOffline) {
-                currentScore = parseInt(localStorage.getItem('localScore') || '0');
-                currentUserName = localStorage.getItem('localName');
-                document.getElementById('score-display').textContent = `النتيجة: ${currentScore} نقطة`;
-                if (currentUserName) { renderState('initial'); checkRules(); }
-                else { document.getElementById('auth-loader').hidden = true; document.getElementById('name-modal').hidden = false; }
-                return;
+        function goBackToSettings() {
+            playSound('click');
+            lastGameScore = currentScore; // (جديد) حفظ النتيجة الأخيرة
+            
+            currentGameSettings = { difficulty: null, type: null };
+            currentPuzzleList = [];
+            currentPuzzle = null;
+
+            puzzleContainerEl.classList.add('hidden');
+            selectionContainerEl.classList.remove('hidden');
+            
+            // (جديد) إظهار قسم النتيجة الأخيرة
+            if (lastGameScore > 0) {
+                lastScoreTextEl.textContent = `كانت نتيجتك الأخيرة: ${lastGameScore}`;
+                lastScoreContainerEl.classList.remove('hidden');
+                shareFeedbackEl.textContent = ''; // مسح رسالة النسخ
             }
-            const lbRef = doc(db, getPath('leaderboard', uid));
-            try {
-                const snap = await getDoc(lbRef);
-                if (snap.exists() && snap.data().name) {
-                    currentUserName = snap.data().name;
-                    currentScore = snap.data().score || 0;
-                    document.getElementById('score-display').textContent = `النتيجة: ${currentScore} نقطة`;
-                    renderState('initial');
-                    checkRules();
-                } else {
-                    document.getElementById('auth-loader').hidden = true;
-                    document.getElementById('name-modal').hidden = false;
+            
+            resetUI();
+            answerInputEl.disabled = false;
+        }
+
+        function resetUI() {
+            answerInputEl.value = '';
+            answerInputEl.disabled = false;
+            answerInputEl.classList.remove('game-input-correct', 'game-input-wrong', 'animate-shake');
+            checkButtonEl.disabled = false;
+            showAnswerButtonEl.disabled = false;
+            feedbackMessageEl.textContent = '';
+            feedbackMessageEl.className = 'mt-4 text-center h-8';
+        }
+
+        function checkAnswer() {
+            if (!currentPuzzle) return;
+            
+            const normalizedUserAnswer = normalizeArabic(answerInputEl.value);
+            if (normalizedUserAnswer === "") return;
+
+            const correctAnswers = currentPuzzle.answer; 
+            const normalizedCorrectAnswers = correctAnswers.map(normalizeArabic);
+
+            if (normalizedCorrectAnswers.includes(normalizedUserAnswer)) {
+                currentScore += 10;
+                currentStreak++;
+                if (currentScore > highScore) {
+                    highScore = currentScore;
+                    localStorage.setItem('puzzleHighScore', highScore);
                 }
-            } catch (e) { renderState('error', {message: "خطأ تحميل البيانات", techDetails: e.message}); }
-        }
+                updateScoreboard();
+                playSound('correct');
 
-        function checkRules() {
-            if (!localStorage.getItem('hasSeenRules')) setTimeout(() => document.getElementById('welcome-modal').hidden = false, 500);
-        }
-
-        async function generateRiddle(lvl) {
-            currentLevel = lvl;
-            document.querySelectorAll('.level-btn').forEach(b => {
-                const active = b.dataset.level == lvl;
-                b.className = `level-btn px-5 py-2.5 text-sm sm:text-base font-semibold rounded-xl shadow-lg transition-all duration-300 border ${active ? 'bg-yellow-500 text-gray-900 border-yellow-500 transform scale-105 ring-2 ring-yellow-500/40' : 'bg-gray-800 text-yellow-500 border-gray-700 hover:border-yellow-500 hover:text-yellow-400'}`;
-            });
-            renderState('loading');
-            
-            const levelNames = { 1: "الملفّق (المستوى 1 - تبديل الحروف)", 2: "الأحجية (المستوى 2 - تقطيع الكلمة)", 3: "المعمّى (المستوى 3 - لغز مركب)" };
-            
-            const promptData = {
-                system: SYSTEM_PROMPT,
-                user: `أنشئ لغزاً جديداً من نوع: ${levelNames[lvl]}. يجب أن يكون الحل (الإجابة) اسماً عربياً فصحياً وينطبق عليه "نظام الألغاز والأحاجي".`,
-                schema: { type: "OBJECT", properties: { riddle: {type:"STRING"}, answer: {type:"STRING"} } }
-            };
-            try {
-                const txt = await callAI(promptData);
-                const obj = JSON.parse(txt);
-                currentRiddle = obj.riddle; currentAnswer = obj.answer;
-                renderState('riddle', { riddle: currentRiddle });
-            } catch (e) { renderState('error', { message: "تعذر جلب اللغز، حاول مجدداً." }); }
-        }
-
-        async function checkAnswer(e) {
-            e.preventDefault();
-            const val = document.getElementById('user-input').value.trim();
-            if(!val) return;
-            renderState('loading');
-            const checkPrompt = `
-أنت حكم ذكي يلتزم بـ "نظام الألغاز والأحاجي".
-اللغز: "${currentRiddle}"
-الجواب الصحيح (للمقارنة): "${currentAnswer}"
-إجابة المستخدم: "${val}"
-
-المطلوب:
-1. هل إجابة المستخدم صحيحة؟ (isCorrect: true/false)
-2. قدم شرحاً (feedback) يعتمد على قواعد النظام:
-   - إذا كانت صحيحة: اشرح كيف انطبقت القاعدة (مثلاً: أحسنت، فعلاً إذا قلبنا حروف كذا أصبحت كذا).
-   - إذا كانت خاطئة: اشرح القاعدة والحل الصحيح (مثلاً: خطأ، لأن الأحجية تتطلب تقطيع الكلمة، والحل الصحيح هو...).
-`;
-            const promptData = {
-                system: SYSTEM_PROMPT, // استخدام نفس الدستور للحكم أيضاً
-                user: checkPrompt,
-                schema: { type: "OBJECT", properties: { isCorrect: {type:"BOOLEAN"}, feedback: {type:"STRING"} } }
-            };
-            try {
-                const txt = await callAI(promptData);
-                const res = JSON.parse(txt);
-                renderState('feedback', res);
-                if (res.isCorrect) { currentScore++; await updateLeaderboardAndScore(); document.getElementById('score-display').textContent = `النتيجة: ${currentScore} نقطة`; }
-                currentRiddle = null;
-            } catch(e) { renderState('error', { message: "خطأ في التحقق." }); }
-        }
-
-        function activateOfflineMode() {
-            isOffline = true;
-            currentUserId = 'offline_user';
-            loadPlayerData(currentUserId);
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('rules-content').innerHTML = FULL_RULES_TEXT;
-            document.getElementById('modal-rules-body').innerHTML = FULL_RULES_TEXT;
-
-            document.querySelectorAll('.level-btn').forEach(b => b.addEventListener('click', () => generateRiddle(b.dataset.level)));
-            document.getElementById('answer-form').addEventListener('submit', checkAnswer);
-            document.getElementById('next-riddle-btn').addEventListener('click', () => generateRiddle(currentLevel));
-            document.getElementById('show-answer-btn').addEventListener('click', () => {
-                renderState('feedback', {message: `الإجابة الصحيحة هي: "${currentAnswer}"`, isCorrect: false}); currentRiddle=null;
-            });
-            document.getElementById('toggle-rules-btn').addEventListener('click', function() {
-                const content = document.getElementById('rules-content');
-                content.hidden = !content.hidden;
-                this.textContent = content.hidden ? "إظهار قواعد الألغاز" : "إخفاء قواعد الألغاز";
-            });
-            const closeModal = () => { document.getElementById('welcome-modal').hidden = true; localStorage.setItem('hasSeenRules', 'true'); };
-            document.getElementById('close-modal-btn').addEventListener('click', closeModal);
-            document.getElementById('close-modal-top-btn').addEventListener('click', closeModal);
-            document.getElementById('close-account-modal').addEventListener('click', () => { document.getElementById('account-modal').hidden = true; });
-
-            const tabReg = document.getElementById('tab-register');
-            const tabLogin = document.getElementById('tab-login');
-            tabReg.addEventListener('click', () => { tabReg.className="flex-1 py-4 text-center font-bold transition-colors tab-active"; tabLogin.className="flex-1 py-4 text-center font-bold transition-colors tab-inactive"; document.getElementById('register-form-container').hidden=false; document.getElementById('login-form-container').hidden=true; });
-            tabLogin.addEventListener('click', () => { tabLogin.className="flex-1 py-4 text-center font-bold transition-colors tab-active"; tabReg.className="flex-1 py-4 text-center font-bold transition-colors tab-inactive"; document.getElementById('login-form-container').hidden=false; document.getElementById('register-form-container').hidden=true; });
-
-            document.getElementById('register-form').addEventListener('submit', (e) => { e.preventDefault(); registerAccount(document.getElementById('reg-phone').value, document.getElementById('reg-pass').value); });
-            document.getElementById('login-form').addEventListener('submit', (e) => { e.preventDefault(); loginAccount(document.getElementById('login-phone').value, document.getElementById('login-pass').value); });
-            
-            document.getElementById('name-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const name = document.getElementById('player-name-input').value.trim();
-                if(name) {
-                    currentUserName = name;
-                    document.getElementById('name-modal').hidden = true;
-                    renderState('initial');
-                    await updateLeaderboardAndScore();
-                    checkRules();
-                }
-            });
-            document.getElementById('open-login-from-welcome').addEventListener('click', () => {
-                if (isOffline) { alert("غير متوفر في وضع عدم الاتصال"); return; }
-                document.getElementById('name-modal').hidden = true;
-                document.getElementById('account-modal').hidden = false;
-                tabLogin.click(); 
-            });
-
-            document.getElementById('play-offline-btn').addEventListener('click', activateOfflineMode);
-
-            if(auth) {
-                onAuthStateChanged(auth, async (user) => {
-                    if(user) {
-                        currentUserId = user.uid;
-                        document.getElementById('auth-debug-msg').textContent = "Authenticated! Loading Data...";
-                        loadPlayerData(user.uid);
-                        try {
-                             onSnapshot(query(collection(db, getPath('leaderboard')), limit(10)), (snap) => {
-                                if(isOffline) return;
-                                const list = document.getElementById('leaderboard-list');
-                                list.innerHTML = "";
-                                const users = snap.docs.map(d => ({id:d.id, ...d.data()})).sort((a,b) => (b.score||0)-(a.score||0));
-                                if(!users.length) list.innerHTML = '<li class="text-gray-400 text-center">لا يوجد لاعبون</li>';
-                                users.forEach(u => {
-                                    const isMe = u.id === currentUserId;
-                                    const li = document.createElement('li');
-                                    li.className = `${isMe ? 'bg-yellow-900/30 border-yellow-500/40' : 'bg-gray-700/30'} p-3 rounded-xl flex justify-between items-center text-lg mb-2 transition-colors hover:bg-gray-700/50`;
-                                    li.innerHTML = `<span class="${isMe?'text-yellow-300 font-bold':''}">${u.name||'مجهول'}</span><span class="font-bold text-yellow-500">${u.score||0}</span>`;
-                                    list.appendChild(li);
-                                });
-                            }, (err) => {
-                                console.warn("Leaderboard access denied (likely permission issue)", err);
-                            });
-                        } catch (e) {
-                            console.warn("Snapshot error", e);
-                        }
-                    } else {
-                        document.getElementById('auth-debug-msg').textContent = "Signing in anonymously...";
-                        try { 
-                            if(initialAuthToken) await signInWithCustomToken(auth, initialAuthToken); 
-                            else await signInAnonymously(auth); 
-                        } catch(e) { 
-                            console.error("Auth failed", e);
-                            const currentDomain = window.location.hostname;
-                            renderState('error', {
-                                message: `فشل الاتصال بخادم المصادقة. هذا يحدث عادة لأن النطاق (Domain) الحالي غير مسموح به.`,
-                                techDetails: `Error: ${e.message}\n\nCurrent Domain: ${currentDomain}\n\nSolution: Go to Firebase Console -> Authentication -> Settings -> Authorized Domains -> Add "${currentDomain}"`
-                            }); 
-                        }
-                    }
-                });
+                feedbackMessageEl.textContent = 'أحسنت! ... جارٍ تحميل اللغز التالي...';
+                feedbackMessageEl.classList.add('feedback-correct');
+                answerInputEl.classList.add('game-input-correct');
+                
+                answerInputEl.disabled = true;
+                checkButtonEl.disabled = true;
+                showAnswerButtonEl.disabled = true;
+                
+                setTimeout(loadNextPuzzle, CORRECT_DELAY);
             } else {
-                activateOfflineMode();
+                currentStreak = 0;
+                updateScoreboard();
+                playSound('wrong');
+
+                feedbackMessageEl.textContent = 'خطأ! حاول مرة أخرى.';
+                feedbackMessageEl.classList.add('feedback-wrong');
+                answerInputEl.classList.add('game-input-wrong');
+                answerInputEl.classList.add('animate-shake');
+                
+                setTimeout(() => {
+                    answerInputEl.classList.remove('animate-shake', 'game-input-wrong');
+                    feedbackMessageEl.textContent = '';
+                    feedbackMessageEl.classList.remove('feedback-wrong');
+                }, 1000);
             }
+        }
+        
+        function showAnswer() {
+            if (!currentPuzzle) return;
+
+            currentScore -= 5;
+            if (currentScore < 0) currentScore = 0;
+            currentStreak = 0;
+            updateScoreboard();
+            playSound('info');
+
+            const displayAnswer = currentPuzzle.answer.join(' / ');
+
+            feedbackMessageEl.textContent = `الجواب: ${displayAnswer} ... جارٍ التحميل...`;
+            feedbackMessageEl.classList.add('feedback-info');
+            answerInputEl.value = displayAnswer;
+
+            checkButtonEl.disabled = true;
+            answerInputEl.disabled = true;
+            showAnswerButtonEl.disabled = true;
+
+            setTimeout(loadNextPuzzle, SHOW_ANSWER_DELAY);
+        }
+
+        // (جديد) دالة كتم الصوت
+        function toggleMute() {
+            isMuted = !isMuted;
+            localStorage.setItem('puzzleMuted', isMuted);
+            updateMuteButton();
+            if (!isMuted) {
+                playSound('force-click'); // تشغيل صوت عند إلغاء الكتم
+            }
+        }
+
+        // (جديد) تحديث شكل زر كتم الصوت
+        function updateMuteButton() {
+            if (isMuted) {
+                muteIconOn.style.display = 'none';
+                muteIconOff.style.display = 'block';
+                muteTooltipEl.textContent = 'تشغيل الصوت';
+            } else {
+                muteIconOn.style.display = 'block';
+                muteIconOff.style.display = 'none';
+                muteTooltipEl.textContent = 'كتم الصوت';
+            }
+        }
+
+        // (جديد) دالة مسح أعلى رصيد
+        function resetHighScore() {
+            playSound('wrong');
+            highScore = 0;
+            localStorage.setItem('puzzleHighScore', '0');
+            updateScoreboard();
+            if (currentScore === 0) { // تحديث لوحة النتائج إذا كان في شاشة اللعب
+                scoreEl.textContent = 0;
+            }
+        }
+        
+        // (جديد) دالة مشاركة النتيجة
+        function shareScore() {
+            playSound('click');
+            const textToCopy = `لقد حصلت على ${lastGameScore} نقطة في تطبيق "نظام الألغاز"!`; // (تم تعديل النص)
+            
+            // استخدام خدعة لنسخ النص
+            const el = document.createElement('textarea');
+            el.value = textToCopy;
+            el.setAttribute('readonly', '');
+            el.style.position = 'absolute';
+            el.style.left = '-9999px';
+            document.body.appendChild(el);
+            el.select();
+            try {
+                document.execCommand('copy');
+                shareFeedbackEl.textContent = 'تم النسخ إلى الحافظة!';
+            } catch (err) {
+                shareFeedbackEl.textContent = 'فشل النسخ.';
+            }
+            document.body.removeChild(el);
+
+            setTimeout(() => { shareFeedbackEl.textContent = ''; }, 2000);
+        }
+
+        // 7. ربط الأحداث
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // (جديد) تم إرجاع 'window.addEventListener('load')'
+            // هذا هو الإصلاح: ننتظر تحميل كل الموارد (الخطوط، الصوت)
+            window.addEventListener('load', () => {
+                // التأكد من أن Tone.js جاهز
+                Tone.start().then(() => {
+                    // إعطاء 500ms إضافية لضمان استقرار الخطوط
+                    setTimeout(() => {
+                        loadingScreenEl.classList.add('hidden');
+                        document.body.classList.remove('is-loading');
+                        
+                        // (تعديل) إظهار نافذة كيفية اللعب تلقائياً
+                        modalEl.classList.add('visible');
+                        playSound('click');
+
+                    }, 500);
+                }).catch((e) => {
+                    // حتى لو فشل Tone، اعرض التطبيق
+                    console.error("Tone.js failed, but loading app anyway:", e);
+                    loadingScreenEl.classList.add('hidden');
+                    document.body.classList.remove('is-loading');
+                    
+                    // (تعديل) إظهار نافذة كيفية اللعب تلقائياً (بدون صوت)
+                    modalEl.classList.add('visible');
+                });
+            });
+
+            // تحميل الإعدادات المحفوظة
+            highScore = parseInt(localStorage.getItem('puzzleHighScore') || '0', 10);
+            isMuted = localStorage.getItem('puzzleMuted') === 'true';
+            updateScoreboard();
+            updateMuteButton();
+
+            // ربط الأزرار
+            startButtonEl.addEventListener('click', startGame);
+            checkButtonEl.addEventListener('click', checkAnswer);
+            showAnswerButtonEl.addEventListener('click', showAnswer);
+            backToSettingsButtonEl.addEventListener('click', goBackToSettings);
+            muteButtonEl.addEventListener('click', toggleMute);
+            resetHighScoreButtonEl.addEventListener('click', resetHighScore);
+            shareButtonEl.addEventListener('click', shareScore);
+            
+            answerInputEl.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !checkButtonEl.disabled) {
+                    checkAnswer();
+                }
+            });
+
+            // نافذة كيفية اللعب
+            howToPlayButtonEl.addEventListener('click', () => {
+                playSound('click');
+                modalEl.classList.add('visible');
+            });
+            closeModalButtonEl.addEventListener('click', () => {
+                playSound('click');
+                modalEl.classList.remove('visible');
+            });
+            modalEl.addEventListener('click', (e) => {
+                if (e.target === modalEl) {
+                    playSound('click');
+                    modalEl.classList.remove('visible');
+                }
+            });
         });
+
     </script>
 </body>
 </html>
