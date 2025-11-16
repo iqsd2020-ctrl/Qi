@@ -15,7 +15,7 @@
             background: linear-gradient(135deg, #0f172a 0%, #302b63 100%);
             overflow: hidden;
         }
-        /* (جديد) إخفاء المحتوى الرئيسي أثناء التحميل */
+        /* إخفاء المحتوى الرئيسي أثناء التحميل */
         body.is-loading .game-card {
             opacity: 0;
         }
@@ -44,7 +44,7 @@
             transition: opacity 0.3s ease-in-out;
         }
         
-        /* (جديد) تصميم شريط التمرير للنافذة المنبثقة */
+        /* تصميم شريط التمرير للنافذة المنبثقة */
         .modal-content::-webkit-scrollbar {
             width: 8px;
         }
@@ -275,7 +275,7 @@
         .color-f5 { color: #c084fc; }
         .color-f6 { color: #9ca3af; }
 
-        /* (جديد) شاشة التحميل */
+        /* شاشة التحميل */
         #loading-screen {
             position: fixed;
             top: 0;
@@ -312,7 +312,7 @@
             font-weight: 700;
         }
 
-        /* (جديد) زر كتم الصوت والتلميح */
+        /* زر كتم الصوت والتلميح */
         #mute-button {
             position: absolute;
             top: 1.5rem;
@@ -359,7 +359,7 @@
         }
         .icon-off { display: none; }
         
-        /* (جديد) زر مشاركة النتيجة */
+        /* زر مشاركة النتيجة */
         #last-score-container {
             text-align: center;
             background: rgba(0, 0, 0, 0.2);
@@ -389,7 +389,7 @@
 </head>
 <body class="is-loading flex items-center justify-center min-h-screen p-4">
 
-    <!-- (جديد) شاشة التحميل -->
+    <!-- شاشة التحميل -->
     <div id="loading-screen">
         <div class="spinner"></div>
         <p class="loading-text">جارٍ تحميل نظام الألغاز...</p>
@@ -397,7 +397,7 @@
 
     <div class="game-card rounded-xl p-6 md:p-8 w-full max-w-lg m-4 relative">
         
-        <!-- (جديد) زر كتم الصوت -->
+        <!-- زر كتم الصوت -->
         <button id="mute-button">
             <svg class="icon-on" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 0 1 0 12.728M16.463 8.288a5.25 5.25 0 0 1 0 7.424M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.718-.54-1.99-1.354a9.009 9.009 0 0 1-.3-1.003V12c0-.362.068-.71.187-1.046.12-.336.31-.643.553-.89l.262-.262c.243-.247.553-.437.89-.553.336-.12.684-.187 1.046-.187h2.24Z" /></svg>
             <svg class="icon-off" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 9.75 19.5 12m0 0 2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25M6.75 8.25l4.72-4.72a.75.75 0 0 1 1.28.53v15.88a.75.75 0 0 1-1.28.53l-4.72-4.72H4.51c-.88 0-1.718-.54-1.99-1.354a9.009 9.009 0 0 1-.3-1.003V12c0-.362.068-.71.187-1.046.12-.336.31-.643.553-.89l.262-.262c.243-.247.553-.437.89-.553.336-.12.684-.187 1.046-.187h2.24Z" /></svg>
@@ -408,8 +408,9 @@
         <h1 class="text-3xl md:text-4xl text-center text-white mb-2">
             نظام الألغاز
         </h1>
+        <!-- (إصلاح 3) تمت إضافة عنوان فرعي -->
         <p class="text-center text-blue-300 mb-8 text-sm font-medium" style="font-size: 1.1rem !important;">
-            
+            اختبر معرفتك بالأحاجي العربية
         </p>
 
         <div class="card-wrapper">
@@ -417,7 +418,7 @@
             <!-- منطقة الاختيار (شاشة 1) -->
             <div id="selection-container" class="screen space-y-6">
 
-                <!-- (جديد) قسم مشاركة النتيجة -->
+                <!-- قسم مشاركة النتيجة -->
                 <div id="last-score-container" class="hidden">
                     <p id="last-score-text">كانت نتيجتك الأخيرة: 100</p>
                     <button id="share-button" class="w-full text-white p-2 rounded-lg text-lg game-button">
@@ -444,8 +445,6 @@
                     </div>
                 </fieldset>
 
-                <!-- (تم الحذف) قسم اختيار نوع اللغز -->
-
                 <div class="grid grid-cols-2 gap-4 pt-4">
                      <button id="how-to-play-button" class="w-full text-white p-4 rounded-lg text-lg game-button game-button-gray">
                         كيفية اللعب؟
@@ -455,7 +454,7 @@
                     </button>
                 </div>
                 
-                <!-- (جديد) زر مسح الرصيد -->
+                <!-- زر مسح الرصيد -->
                 <button id="reset-highscore-button" class="w-full text-white p-3 rounded-lg text-sm game-button game-button-red opacity-70" style="font-size: 1rem !important;">
                     مسح أعلى رصيد
                 </button>
@@ -511,7 +510,7 @@
         </div>
 
         <p class="text-center text-xs text-gray-500 mt-6" style="font-size: 0.8rem !important;">
-            الإصدار 1.0 (اللمسات النهائية)
+            الإصدار 1.1 (نسخة مُصححة)
         </p>
     </div>
 
@@ -581,7 +580,6 @@
     <script>
         // --- [المنطق المطور بالكامل] ---
         
-        // (جديد) متغيرات التحكم بالصوت
         let isMuted = false;
         
         // 1. إعدادات الصوت
@@ -599,7 +597,6 @@
             info: new Tone.PluckSynth().toDestination(),
         };
         async function playSound(soundName) {
-            // (جديد) التحقق إذا كان الصوت مكتوماً
             if (isMuted && soundName !== 'force-click') return; 
             
             try {
@@ -642,7 +639,6 @@
             { type: "ملفق", difficulty: "سهل", question_text: "رجاء للمستقبل، إذا لفّقت حروفه صار: وجعاً.", answer: ["أمل", "ألم"] },
             { type: "ملفق", difficulty: "سهل", question_text: "ثمر النخيل، إذا لفّقت حروفه صار: أداة للربط.", answer: ["حبل", "بلح"] },
             { type: "ملفق", difficulty: "سهل", question_text: "كلام مقفى، إذا لفّقت حروفه صار: مقعد الملك.", answer: ["عرش", "شعر"] },
-            // 7 متوسط
             { type: "ملفق", difficulty: "متوسط", question_text: "كوكب ليلي، إذا لفّقت حروفه صار: عدداً حسابياً.", answer: ["رقم", "قمر"] },
             { type: "ملفق", difficulty: "متوسط", question_text: "سلاح قديم، إذا لفّقت حروفه صار: مكاناً مقدساً.", answer: ["حرم", "رمح"] },
             { type: "ملفق", difficulty: "متوسط", question_text: "طعام يومي، إذا لفّقت حروفه صار: صغير الشاة.", answer: ["حمل", "لحم"] },
@@ -650,41 +646,34 @@
             { type: "ملفق", difficulty: "متوسط", question_text: "أداة رمي، إذا لفّقت حروفه صار: صوتاً خافتاً.", answer: ["همس", "سهم"] },
             { type: "ملفق", difficulty: "متوسط", question_text: "ذكر الضأن، إذا لفّقت حروفه صار: أداة للصيد.", answer: ["شبك", "كبش"] },
             { type: "ملفق", difficulty: "متوسط", question_text: "فاكهة، إذا لفّقت حروفه صار: عين الماء.", answer: ["نبع", "عنب"] },
-            // 6 صعب
             { type: "ملفق", difficulty: "صعب", question_text: "طيب وعطر، إذا لفّقت حروفه صار: حيواناً بحرياً.", answer: ["سمك", "مسك"] },
             { type: "ملفق", difficulty: "صعب", question_text: "شريك الحياة، إذا لفّقت حروفه صار: مكسرات.", answer: ["جوز", "زوج"] },
             { type: "ملفق", difficulty: "صعب", question_text: "فصل الجمال، إذا لفّقت حروفه صار: شذىً وعطراً.", answer: ["عبير", "ربيع"] },
             { type: "ملفق", difficulty: "صعب", question_text: "حيوانات، إذا لفّقت حروفه صار: دنوّاً.", answer: ["قرب", "بقر"] },
             { type: "ملفق", difficulty: "صعب", question_text: "عضو البصر، إذا لفّقت حروفه صار: إخباراً بالموت.", answer: ["نعي", "عين"] },
-            // { type: "ملفق", difficulty: "صعب", question_text: "شهر الصوم، إذا لفّقت حروفه صار: مرضاً بالعين.", answer: ["رمضان", "رمد"] }, // <-- هذا اللغز خاطئ (الحروف غير متطابقة)، تم استبداله
-            { type: "ملفق", difficulty: "صعب", question_text: "دولة عربية، إذا لفّقت حروفه صار: عكس 'حلو'.", answer: ["مصر", "مر"] }, // <-- لغز بديل وصحيح
+            { type: "ملفق", difficulty: "صعب", question_text: "دولة عربية، إذا لفّقت حروفه صار: عكس 'حلو'.", answer: ["مصر", "مر"] },
 
             // --- القسم الثاني: الأحاجي (20) ---
-            // { type: "أحجية", difficulty: "سهل", question_text: "ما اسم عملة، شطرها الأول (ملة ومعتقد)، وشطره الثاني (لهب حارق)؟", answer: ["دينار"] }, // <-- الشطر الثاني "ار" وليس "نار"
-            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم عملة، شطرها الأول (ملة ومعتقد)، وشطره الثاني (فعل أمر بالرؤية)؟", answer: ["دينار"] }, // <-- تصحيح لغز دينار
-            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم طائر، شطره الأول (فعل أمر بالخداع)، وشطره الثاني (والد)؟", answer: ["غراب"] },
-            // { type: "أحجية", difficulty: "سهل", question_text: "ما اسم زهرة، شطرها الأول (قنوط)، وشطره الثاني (حرف جر)؟", answer: ["ياسمين"] }, // <-- "مين" ليست حرف جر
-            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم زهرة، شطرها الأول (قنوط)، وشطره الثاني (من؟ بالعامية)؟", answer: ["ياسمين"] }, // <-- تصحيح لغز ياسمين
-            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم لقب، شطره الأول (هرب)، وشطره الثاني (مساعدة)؟", answer: ["فرعون"] },
-            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم فاكهة، شطرها الأول (ارتحال)، وشطره الثاني (عَظُمَ قدره)؟", answer: ["سفرجل"] },
-            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم شيء بالبيت، شطره الأول (عكس خير)، وشطره الثاني (مضى)؟", answer: ["شرفات"] },
-            // { type: "أحجية", difficulty: "سهل", question_text: "ما اسم بلدة، شطرها الأول (نقود تافهة)، وشطره الثاني (فاكهة قرآنية)؟", answer: ["فلسطين"] }, // <-- خطأ "طين" ليست فاكهة "تين"
-            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم بلدة، شطرها الأول (نقود تافهة)، وشطره الثاني (مادة الخلق)؟", answer: ["فلسطين"] }, // <-- تصحيح لغز فلسطين (ملاحظة المستخدم)
-            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم وسيلة تواصل، شطرها الأول (اليابسة)، وشطره الثاني (عضو بالجسم)؟", answer: ["بريد"] },
-            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم سائل سماوي، شطره الأول (قاتل)، وشطره الثاني (سائل الحياة)؟", answer: ["سماء"] },
-            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم حجر كريم، شطره الأول (فعل أمر بالشد)، وشطره الثاني (جواب)؟", answer: ["زمرد"] },
-            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم طائر، شطره الأول (أمر بالمعصية)، وشطره الثاني (حالاً)؟", answer: ["عصفور"] },
-            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم نبات، شطره الأول (استقر)، وشطره الثاني (نافلة)؟", answer: ["قرنفل"] },
-            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم عين بالجنة، شطرها الأول (فعل أمر بالسؤال)، وشطره الثاني (طريق)؟", answer: ["سلسبيل"] },
-            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم مكان، شطره الأول (أخ بالعامية)، وشطره الثاني (يابسة)؟", answer: ["خيبر"] },
+            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم عملة، شطرها الأول (ملة ومعتقد)، وشطره الثاني (فعل أمر بالرؤية)؟", answer: ["دينار"] }, // (دين + ار)
+            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم طائر، شطره الأول (فعل أمر بالخداع)، وشطره الثاني (والد)؟", answer: ["غراب"] }, // (غر + اب)
+            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم زهرة، شطرها الأول (قنوط)، وشطره الثاني (من؟ بالعامية)؟", answer: ["ياسمين"] }, // (ياس + مين)
+            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم لقب، شطره الأول (هرب)، وشطره الثاني (مساعدة)؟", answer: ["فرعون"] }, // (فر + عون)
+            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم فاكهة، شطرها الأول (ارتحال)، وشطره الثاني (عَظُمَ قدره)؟", answer: ["سفرجل"] }, // (سفر + جل)
+            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم شيء بالبيت، شطره الأول (عكس خير)، وشطره الثاني (مضى)؟", answer: ["شرفات"] }, // (شر + فات)
+            { type: "أحجية", difficulty: "سهل", question_text: "ما اسم بلدة، شطرها الأول (نقود تافهة)، وشطره الثاني (مادة الخلق)؟", answer: ["فلسطين"] }, // (فلس + طين)
+            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم وسيلة تواصل، شطرها الأول (اليابسة)، وشطره الثاني (عضو بالجسم)؟", answer: ["بريد"] }, // (بر + يد)
+            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم سائل سماوي، شطره الأول (قاتل)، وشطره الثاني (سائل الحياة)؟", answer: ["سماء"] }, // (سم + ماء)
+            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم حجر كريم، شطره الأول (فعل أمر بالشد)، وشطره الثاني (جواب)؟", answer: ["زمرد"] }, // (زم + رد)
+            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم طائر، شطره الأول (أمر بالمعصية)، وشطره الثاني (حالاً)؟", answer: ["عصفور"] }, // (عص + فور)
+            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم نبات، شطره الأول (استقر)، وشطره الثاني (نافلة)؟", answer: ["قرنفل"] }, // (قر + نفل)
+            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم عين بالجنة، شطرها الأول (فعل أمر بالسؤال)، وشطره الثاني (طريق)؟", answer: ["سلسبيل"] }, // (سل + سبيل)
+            { type: "أحجية", difficulty: "متوسط", question_text: "ما اسم مكان، شطره الأول (أخ بالعامية)، وشطره الثاني (يابسة)؟", answer: ["خيبر"] }, // (خي + بر)
             { type: "أحجية", difficulty: "صعب", question_text: "ما اسم شعور، شطره الأول (شيء يكتم)، وشطره الثاني (خلف)؟", answer: ["سرور"] }, // (سر + ور[اء])
-            // { type: "أحجية", difficulty: "صعب", question_text: "ما اسم فاكهة، شطرها الأول (لمس)، وشطره الثاني (لمس)؟", answer: ["مشمش"] }, // <-- "مش" ليست "لمس"
-            { type: "أحجية", difficulty: "صعب", question_text: "ما اسم فاكهة، شطرها الأول (فعل أمر بالمشي)، وشطره الثاني (فعل أمر بالمشي)؟", answer: ["مشمش"] }, // <-- تصحيح لغز مشمش
-            { type: "أحجية", difficulty: "صعب", question_text: "ما اسم سلطان، شطره الأول (استل)، وشطره الثاني (صوت الرنين)؟", answer: ["سلطان"] },
-            { type: "أحجية", difficulty: "صعب", question_text: "ما اسم شيء لابد منه، شطره الأول (أداة نفي)، وشطره الثاني (مفر)؟", answer: ["لابد"] },
-            // { type: "أحجية", difficulty: "صعب", question_text: "ما اسم فاكهة، شطرها الأول (عباءة)، وشطره الثاني (تحدث)؟", answer: ["برتقال"] }, // <-- "بر" ليست "عباءة"
-            { type: "أحجية", difficulty: "صعب", question_text: "ما اسم فاكهة، شطرها الأول (يابسة)، وشطره الثاني (يُقال)؟", answer: ["برتقال"] }, // <-- تصحيح لغز برتقال
-            { type: "أحجية", difficulty: "صعب", question_text: "ما اسم حبوب، شطره الأول (سم)، وشطره الثاني (سم)؟", answer: ["سمسم"] },
+            { type: "أحجية", difficulty: "صعب", question_text: "ما اسم فاكهة، شطرها الأول (فعل أمر بالمشي)، وشطره الثاني (فعل أمر بالمشي)؟", answer: ["مشمش"] }, // (مش + مش)
+            { type: "أحجية", difficulty: "صعب", question_text: "ما اسم سلطان، شطره الأول (استل)، وشطره الثاني (صوت الرنين)؟", answer: ["سلطان"] }, // (سل + طان)
+            { type: "أحجية", difficulty: "صعب", question_text: "ما اسم شيء لابد منه، شطره الأول (أداة نفي)، وشطره الثاني (مفر)؟", answer: ["لابد"] }, // (لا + بد)
+            { type: "أحجية", difficulty: "صعب", question_text: "ما اسم فاكهة، شطرها الأول (يابسة)، وشطره الثاني (يُقال)؟", answer: ["برتقال"] }, // (بر + تقال)
+            { type: "أحجية", difficulty: "صعب", question_text: "ما اسم حبوب، شطره الأول (سم)، وشطره الثاني (سم)؟", answer: ["سمسم"] }, // (سم + سم)
 
             // --- القسم الثالث: اللغز - بالمعنى الأخص (20) ---
             { type: "لغز", difficulty: "سهل", question_text: "أداة للكتابة (3 حروف، جماد، لا يوجد ألف).", answer: ["قلم"] },
@@ -708,9 +697,9 @@
             { type: "لغز", difficulty: "صعب", question_text: "طائر جارح (3 حروف، طائر، لا يوجد ألف).", answer: ["صقر"] },
             { type: "لغز", difficulty: "صعب", question_text: "عماد الدين (4 حروف، عبادة، يوجد ألف).", answer: ["صلاة"] },
             
-            // --- القسم الرابع: المعمّى ---
-            { type: "معمّى", difficulty: "صعب", answer: ["حسن"], question_text: "المرحلة 1 (لغز): جماد من 3 حروف لا ألف فيه (يدل على الجمال). المرحلة 2: أضف له 'ال' فصار اسم علم." },
-            { type: "معمّى", difficulty: "صعب", answer: ["ملح"], question_text: "المرحلة 1 (ملفق): تبديل حروف 'حمل'. المرحلة 2: الناتج هو اسم لشيء يؤكل." },
+            // --- (إصلاح 1) القسم الرابع: المعمّى (تم تصحيح الألغاز) ---
+            { type: "معمّى", difficulty: "صعب", answer: ["الحسن"], question_text: "المرحلة 1 (لغز): جماد من 3 حروف لا ألف فيه (يدل على الجمال). المرحلة 2: أضف له 'ال' فصار اسم علم." },
+            { type: "معمّى", difficulty: "صعب", answer: ["حرام"], question_text: "المرحلة 1 (لغز): حيوان للركوب صبور (4 حروف). المرحلة 2: لفّق حروفه لتحصل على صفة للممنوع شرعاً." }, // (م1: حمار، م2: حرام)
             { type: "معمّى", difficulty: "صعب", answer: ["سمسم"], question_text: "المرحلة 1 (أحجية): مادة تؤكل من مقطعين ('سم' + 'سم'). المرحلة 2: هو اسم لباب في قصة خيالية." }
         ];
 
@@ -749,7 +738,7 @@
         let currentPuzzleList = [];
         let currentPuzzle = null;
         let currentScore = 0;
-        let lastGameScore = 0; // (جديد) لتتبع آخر نتيجة
+        let lastGameScore = 0; 
         let highScore = 0;
         let currentStreak = 0;
         const CORRECT_DELAY = 1500;
@@ -801,18 +790,15 @@
         function startGame() {
             playSound('start');
             currentGameSettings.difficulty = document.querySelector('input[name="difficulty"]:checked').value;
-            // (تعديل) تم إلغاء اختيار النوع، سيتم اختيار "الكل" افتراضياً
+            // تم إلغاء اختيار النوع، سيتم اختيار "الكل" افتراضياً
             currentGameSettings.type = "الكل"; 
 
             let filteredBank = knowledgeBase;
             
-            // (تعديل) ترشيح حسب المستوى فقط
+            // ترشيح حسب المستوى فقط
+            // ملاحظة: الكود لا يحتوي على خيار "الكل" للمستوى، لذا هذا الشرط سيعمل دائماً
             if (currentGameSettings.difficulty !== 'الكل') {
                  filteredBank = knowledgeBase.filter(p => p.difficulty === currentGameSettings.difficulty);
-            }
-            // (تعديل) إذا اختار المستخدم "الكل" للمستوى، نبدأ بـ "سهل"
-            else if (currentGameSettings.difficulty === 'الكل') {
-                filteredBank = knowledgeBase.filter(p => p.difficulty === 'سهل');
             }
             
             currentPuzzleList = [...filteredBank];
@@ -851,7 +837,7 @@
 
         function goBackToSettings() {
             playSound('click');
-            lastGameScore = currentScore; // (جديد) حفظ النتيجة الأخيرة
+            lastGameScore = currentScore; // حفظ النتيجة الأخيرة
             
             currentGameSettings = { difficulty: null, type: null };
             currentPuzzleList = [];
@@ -860,7 +846,7 @@
             puzzleContainerEl.classList.add('hidden');
             selectionContainerEl.classList.remove('hidden');
             
-            // (جديد) إظهار قسم النتيجة الأخيرة
+            // إظهار قسم النتيجة الأخيرة
             if (lastGameScore > 0) {
                 lastScoreTextEl.textContent = `كانت نتيجتك الأخيرة: ${lastGameScore}`;
                 lastScoreContainerEl.classList.remove('hidden');
@@ -949,7 +935,7 @@
             setTimeout(loadNextPuzzle, SHOW_ANSWER_DELAY);
         }
 
-        // (جديد) دالة كتم الصوت
+        // دالة كتم الصوت
         function toggleMute() {
             isMuted = !isMuted;
             localStorage.setItem('puzzleMuted', isMuted);
@@ -959,7 +945,7 @@
             }
         }
 
-        // (جديد) تحديث شكل زر كتم الصوت
+        // تحديث شكل زر كتم الصوت
         function updateMuteButton() {
             if (isMuted) {
                 muteIconOn.style.display = 'none';
@@ -972,7 +958,7 @@
             }
         }
 
-        // (جديد) دالة مسح أعلى رصيد
+        // دالة مسح أعلى رصيد
         function resetHighScore() {
             playSound('wrong');
             highScore = 0;
@@ -983,10 +969,10 @@
             }
         }
         
-        // (جديد) دالة مشاركة النتيجة
+        // دالة مشاركة النتيجة
         function shareScore() {
             playSound('click');
-            const textToCopy = `لقد حصلت على ${lastGameScore} نقطة في تطبيق "نظام الألغاز"!`; // (تم تعديل النص)
+            const textToCopy = `لقد حصلت على ${lastGameScore} نقطة في تطبيق "نظام الألغاز"!`;
             
             // استخدام خدعة لنسخ النص
             const el = document.createElement('textarea');
@@ -1010,30 +996,21 @@
         // 7. ربط الأحداث
         document.addEventListener('DOMContentLoaded', () => {
             
-            // (جديد) تم إرجاع 'window.addEventListener('load')'
-            // هذا هو الإصلاح: ننتظر تحميل كل الموارد (الخطوط، الصوت)
+            // ننتظر تحميل كل الموارد (الخطوط، إلخ)
             window.addEventListener('load', () => {
-                // التأكد من أن Tone.js جاهز
-                Tone.start().then(() => {
-                    // إعطاء 500ms إضافية لضمان استقرار الخطوط
-                    setTimeout(() => {
-                        loadingScreenEl.classList.add('hidden');
-                        document.body.classList.remove('is-loading');
-                        
-                        // (تعديل) إظهار نافذة كيفية اللعب تلقائياً
-                        modalEl.classList.add('visible');
-                        playSound('click');
-
-                    }, 500);
-                }).catch((e) => {
-                    // حتى لو فشل Tone، اعرض التطبيق
-                    console.error("Tone.js failed, but loading app anyway:", e);
+                // إعطاء 500ms إضافية لضمان استقرار الخطوط
+                setTimeout(() => {
                     loadingScreenEl.classList.add('hidden');
                     document.body.classList.remove('is-loading');
                     
-                    // (تعديل) إظهار نافذة كيفية اللعب تلقائياً (بدون صوت)
-                    modalEl.classList.add('visible');
-                });
+                    // إظهار نافذة كيفية اللعب للمستخدم الجديد فقط
+                    const hasSeenRules = localStorage.getItem('puzzleRulesSeen');
+                    if (!hasSeenRules) {
+                        modalEl.classList.add('visible');
+                        localStorage.setItem('puzzleRulesSeen', 'true');
+                        playSound('click'); // محاولة تشغيل الصوت، سيتم تفعيل Tone.start()
+                    }
+                }, 500);
             });
 
             // تحميل الإعدادات المحفوظة
@@ -1077,4 +1054,5 @@
     </script>
 </body>
 </html>
+
 
